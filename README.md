@@ -24,13 +24,13 @@ Connect your Android phone to Windows or Linux system as a trackpad
     struct DATA
     {
         enum DATA_TYPE type;
-        uint32_t x_0;
-        uint32_t y_0;
-        uint32_t x_1;
-        uint32_t y_1;
+        uint32_t posX;
+        uint32_t posY;
+        uint32_t time;
     };
    ```
-   ```x_0``` and ```y_0``` are used as position when data type is click. They are used as first position when data type is a movement. ```x_1``` and ```y_1``` are used as second postion when data type is move. They are used as scrolling period when data type is scroll.  
+   ```posX``` and ```posY``` are used as positions in CLICK. They are used as directions in SCROLL and MOVE.  
+   ```time``` is used as speed in MOVE, and period in SCROLL. It is ignored in CLICK.  
 4. Trackpad sensitivity control  
 
 ------
