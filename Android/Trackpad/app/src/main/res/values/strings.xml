@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Trackpad</string>
+    <string name="app_fullname">Android Trackpad</string>
+    <string name="radio_button_bth">Bluetooth</string>
+    <string name="radio_button_wifi">Wifi</string>
+    <string name="text_connection_info_title">Connection Information</string>
+    <string name="btn_connect">Connect</string>
+    <string name="btn_disconnect">Disconnect</string>
+    <string name="btn_trackpad">Enter Track Pad</string>
+    <string name="btn_help">Help</string>
+    <string name="title_activity_trackpad">Trackpad Fullscreen</string>
+</resources>
