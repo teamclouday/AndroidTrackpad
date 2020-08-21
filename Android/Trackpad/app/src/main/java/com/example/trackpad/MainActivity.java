@@ -2,26 +2,18 @@ package com.example.trackpad;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothClass;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -31,15 +23,12 @@ public class MainActivity extends AppCompatActivity
         CONNECTION_TYPE_BTH,
     };
 
-    private CONNECTION_TYPE connection_type = CONNECTION_TYPE.CONNECTION_TYPE_WIFI;
+    protected CONNECTION_TYPE connection_type = CONNECTION_TYPE.CONNECTION_TYPE_WIFI;
 
-    private final String logTag = "AndroidTrackpad";
-    private final UUID CONNECTION_UUID = UUID.fromString("97c4eab8-234b-42d0-8c09-e9a5b1f1ba5b");
+    protected final String logTag = "AndroidTrackpad";
 
-    // variables for Bluetooth
-    public BluetoothAdapter myBthAdapter;
-    public BluetoothDevice myBthDevice;
-    public BluetoothSocket myBthSocket = null;
+    protected myBthManager managerBth = null;
+    protected myWifiManager managerWifi = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -67,128 +56,182 @@ public class MainActivity extends AppCompatActivity
     }
 
     // onclick event for Connect button
-    public void connectButtonClick(View view)
+    // run in background to avoid UI stuck
+
+    private final class connectButtonClickTask extends AsyncTask<MainActivity, Void, Void>
     {
-        if (connection_type == CONNECTION_TYPE.CONNECTION_TYPE_WIFI)
-        {
-            // reference: https://developer.android.com/training/connect-devices-wirelessly/wifi-direct
-
-
+        private boolean taskfail = false;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            findViewById(R.id.btn_connect).setClickable(false);
         }
-        else if(connection_type == CONNECTION_TYPE.CONNECTION_TYPE_BTH)
-        {
-            // reference: https://developer.android.com/guide/topics/connectivity/bluetooth#SettingUp
 
-            // get default bluetooth adapter
-            myBthAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (myBthAdapter == null)
+        @Override
+        protected Void doInBackground(MainActivity... mainActivities) {
+            MainActivity currentActivity = mainActivities[0];
+            if (currentActivity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_WIFI)
             {
-                refreshConnectInfo("Error: failed to get default Bluetooth adapter!");
-                return;
-            }
-            // enable adapter first
-            if (!myBthAdapter.isEnabled())
-            {
-                Intent enableBthIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                int REQUEST_ENABLE_BT = 1;
-                startActivityForResult(enableBthIntent, REQUEST_ENABLE_BT);
-            }
-            // get paired devices
-            Set<BluetoothDevice> pairedDevices = myBthAdapter.getBondedDevices();
-            if (pairedDevices.size() > 0)
-            {
-                boolean found = false;
-                for(BluetoothDevice device : pairedDevices)
+                if(currentActivity.managerBth != null)
                 {
-                    // check for paired PCs
-                    if (device.getBluetoothClass().getMajorDeviceClass() == BluetoothClass.Device.Major.COMPUTER)
+                    currentActivity.managerBth.destroy();
+                    currentActivity.managerBth = null;
+                }
+                if(currentActivity.managerWifi == null)
+                {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "initializing wifi, please wait", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    currentActivity.managerWifi = new myWifiManager(currentActivity);
+                }
+                else
+                    currentActivity.managerWifi.initialize();
+                if(!currentActivity.managerWifi.initialized)
+                {
+                    final String error_msg = currentActivity.managerWifi.error_msg;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            refreshConnectInfo("Error: failed to initialize wifi helper\n" + error_msg);
+                        }
+                    });
+                    taskfail = true;
+                    return null;
+                }
+                else
+                {
+                    currentActivity.managerWifi.connect();
+                    if(!currentActivity.managerWifi.connected)
                     {
-                        myBthDevice = device;
-                        refreshConnectInfo("Found paired PC, MAC address = " + device.getAddress());
-                        found = true;
-                        break;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                refreshConnectInfo("Error: failed to connect a PC");
+                            }
+                        });
+                        taskfail = true;
+                        return null;
+                    }
+                    else {
+                        final String deviceInfo = managerWifi.getDeviceInfo();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                refreshConnectInfo("Wifi connected\nDevice Info:\n" + deviceInfo);
+                            }
+                        });
                     }
                 }
-                if (!found)
+
+            }
+            else if(currentActivity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_BTH)
+            {
+                if(currentActivity.managerWifi != null)
                 {
-                    refreshConnectInfo("Error: cannot find a paired PC");
-                    return;
+                    currentActivity.managerWifi.destroy();
+                    currentActivity.managerWifi = null;
+                }
+                if(currentActivity.managerBth == null)
+                {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "initializing bluetooth, please wait", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    currentActivity.managerBth = new myBthManager(currentActivity);
+                }
+                else
+                    currentActivity.managerBth.initialize();
+                if(!currentActivity.managerBth.initialized)
+                {
+                    final String error_msg = currentActivity.managerBth.error_msg;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            refreshConnectInfo("Error: failed to initialize bluetooth helper\n" + error_msg);
+                        }
+                    });
+                    taskfail = true;
+                    return null;
+                }
+                else {
+                    currentActivity.managerBth.connect();
+                    if(!currentActivity.managerBth.connected)
+                    {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                refreshConnectInfo("Error: failed to connect a PC");
+                            }
+                        });
+                        taskfail = true;
+                        return null;
+                    }
+                    else {
+                        final String deviceInfo = managerBth.getDeviceInfo();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                refreshConnectInfo("Bluetooth connected\nDevice Info:\n" + deviceInfo);
+                            }
+                        });
+                    }
                 }
             }
-            else
-            {
-                refreshConnectInfo("Error: cannot find paired device\nPlease pair your PC first");
-                return;
-            }
-            // try to get connection socket
-            BluetoothSocket tmp = null;
-            try
-            {
-                tmp = myBthDevice.createRfcommSocketToServiceRecord(CONNECTION_UUID);
-            }
-            catch (IOException e)
-            {
-                refreshConnectInfo("Error: Bluetooth socket failed to create: " + e.getMessage());
-            }
-            myBthSocket = tmp;
-            // connect as a client
-            try
-            {
-                myBthSocket.connect();
-            }
-            catch (IOException connectExp)
-            {
-                refreshConnectInfo("Error: Bluetooth socket failed to connect: " + connectExp.getMessage());
-                try
-                {
-                    myBthSocket.close();
-                }
-                catch (IOException closeExp)
-                {
-                    refreshConnectInfo("Error: Bluetooth socket failed to close: " + closeExp.getMessage());
-                }
-                myBthSocket = null;
-                return;
-            }
-            refreshConnectInfo("Connection via Bluetooth socket succeed");
+            return null;
         }
-        // disable click for radio buttons after connection
-        findViewById(R.id.radioButtonBth).setClickable(false);
-        findViewById(R.id.radioButtonWifi).setClickable(false);
-        // send message
-        Toast.makeText(getApplicationContext(), "You have been connected", 3).show();
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            if(!taskfail)
+            {
+                toggleConnectionState(true);
+                // send message
+                Toast.makeText(getApplicationContext(), "You have been connected", Toast.LENGTH_SHORT).show();
+            }
+            findViewById(R.id.btn_connect).setClickable(true);
+        }
+    }
+
+    public void connectButtonClick(View view)
+    {
+        new connectButtonClickTask().execute(this);
     }
 
     // onclick event for Disconnect button
+    // run in background to avoid UI stuck
+
+    private final class disconnectButtonClickTask extends AsyncTask<MainActivity, Void, Void>
+    {
+        @Override
+        protected Void doInBackground(MainActivity... mainActivities) {
+            MainActivity currentActivity = mainActivities[0];
+            if (currentActivity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_WIFI)
+            {
+                currentActivity.managerWifi.disconnect();
+            }
+            else if (currentActivity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_BTH)
+            {
+                currentActivity.managerBth.disconnect();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            toggleConnectionState(false);
+        }
+    }
+
     public void disconnectButtonClick(View view)
     {
-        if (connection_type == CONNECTION_TYPE.CONNECTION_TYPE_WIFI)
-        {
-
-        }
-        else if (connection_type == CONNECTION_TYPE.CONNECTION_TYPE_BTH)
-        {
-            if (myBthSocket == null)
-            {
-                refreshConnectInfo("Warning: You have not connected yet");
-            }
-            else
-            {
-                try
-                {
-                    myBthSocket.close();
-                }
-                catch (IOException e)
-                {
-                    refreshConnectInfo("Error: Bluetooth socket failed to close: " + e.getMessage());
-                }
-                // send message
-                Toast.makeText(getApplicationContext(), "You have been disconnected", 3).show();
-            }
-        }
-        // enable click for radio buttons after disconnect
-        findViewById(R.id.radioButtonBth).setClickable(true);
-        findViewById(R.id.radioButtonWifi).setClickable(true);
+        new disconnectButtonClickTask().execute(this);
     }
 
     // onclick event for Enter trackpad button
@@ -206,9 +249,26 @@ public class MainActivity extends AppCompatActivity
     }
 
     // refresh connection information in text view
-    private void refreshConnectInfo(String newMsg)
+    protected void refreshConnectInfo(String newMsg)
     {
         TextView infoText = findViewById(R.id.textViewConnectInfo);
         infoText.append(newMsg + "\n");
+    }
+
+    // toggle connection state
+    protected void toggleConnectionState(boolean connected)
+    {
+        if(connected)
+        {
+            // disable click for radio buttons after connection
+            findViewById(R.id.radioButtonBth).setEnabled(false);
+            findViewById(R.id.radioButtonWifi).setEnabled(false);
+        }
+        else
+        {
+            // enable click for radio buttons after disconnect
+            findViewById(R.id.radioButtonBth).setEnabled(true);
+            findViewById(R.id.radioButtonWifi).setEnabled(true);
+        }
     }
 }
