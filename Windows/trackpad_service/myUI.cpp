@@ -106,8 +106,11 @@ void UIManager::draw_UI()
 	ImGui::Text("Choose your connection type:");
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, window_color_radio_bt);
 	lock_Transfer.lock();
-	ImGui::RadioButton("Wifi", reinterpret_cast<int*>(&myTranManager->transfer_type), 1);
-	ImGui::RadioButton("Bluetooth", reinterpret_cast<int*>(&myTranManager->transfer_type), 0);
+	if (myTranManager)
+	{
+		ImGui::RadioButton("Wifi", reinterpret_cast<int*>(&myTranManager->transfer_type), 1);
+		ImGui::RadioButton("Bluetooth", reinterpret_cast<int*>(&myTranManager->transfer_type), 0);
+	}
 	lock_Transfer.unlock();
 	ImGui::PopStyleColor();
 
@@ -128,16 +131,27 @@ void UIManager::draw_UI()
 	ImGui::SetCursorPos(ImVec2(0.07f * window_size_width, 0.05f * window_size_height));
 	if (ImGui::Button("Start Service", ImVec2(0.3f * window_size_width, 0.12f * window_size_height)))
 	{
-
+		if (lock_Transfer.try_lock())
+		{
+			if(myTranManager)
+				myTranManager->start_requested = true;
+			lock_Transfer.unlock();
+		}
 	}
 	ImGui::SetCursorPos(ImVec2(0.07f * window_size_width, 0.22f * window_size_height));
 	if (ImGui::Button("Stop Service", ImVec2(0.3f * window_size_width, 0.12f * window_size_height)))
 	{
-
+		if (lock_Transfer.try_lock())
+		{
+			if (myTranManager)
+				myTranManager->stop_requested = true;
+			lock_Transfer.unlock();
+		}
 	}
 	ImGui::SetCursorPos(ImVec2(0.07f * window_size_width, 0.39f * window_size_height));
 	if (ImGui::Button("Help", ImVec2(0.3f * window_size_width, 0.12f * window_size_height)))
 	{
+		// help button will launch github website of this project
 		ShellExecuteA(NULL, NULL, "https://github.com/teamclouday/AndroidTrackpad/tree/master/Windows", NULL, NULL, SW_SHOW);
 	}
 	ImGui::PopStyleColor();
@@ -155,12 +169,34 @@ void UIManager::draw_UI()
 	ImGui::PopStyleColor();
 	ImGui::PushStyleColor(ImGuiCol_Text, window_color_font_inside);
 
-
+	ImGui::PushTextWrapPos(ImGui::GetFontSize() * 20.0f);
+	for (unsigned i = 0; i < myConnectInfo.size(); i++)
+	{
+		ImGui::Text(myConnectInfo.at(i).c_str());
+	}
+	ImGui::PopTextWrapPos();
 
 	ImGui::PopStyleColor();
 	ImGui::End();
 
 	ImGui::PopStyleColor();
+}
+
+void UIManager::pushMessage(std::string message)
+{
+	myConnectInfo.push_back(message);
+	while (myConnectInfo.size() > connect_info_max_len)
+	{
+		myConnectInfo.pop_front();
+	}
+}
+
+void UIManager::popMessage()
+{
+	if (myConnectInfo.size() > 0)
+	{
+		myConnectInfo.pop_back();
+	}
 }
 
 void UIManager::fps_control(Uint32& prev, Uint32& now)

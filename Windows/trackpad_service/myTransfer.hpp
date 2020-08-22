@@ -3,15 +3,10 @@
 #include "myBthHelper.hpp"
 #include "myWifiHelper.hpp"
 
-#include "myUI.hpp"
-
-#include <mutex>
-
 // This class manage communication with android device
 // via BthManager / WifiManager
 class TransferManager
 {
-friend UIManager;
 public:
 	enum TransferType
 	{
@@ -20,10 +15,16 @@ public:
 	};
 	TransferManager();
 	~TransferManager();
+	void processRequest();
 private:
 
 public:
-
-protected:
+	// set default values
+	bool start_requested = false;
+	bool stop_requested = false;
 	TransferType transfer_type = TRANSFER_TYPE_WIFI_P2P;
+private:
+	// too subset managers
+	BthManager* myBthManager = nullptr;
+	WifiManager* myWifiManager = nullptr;
 };

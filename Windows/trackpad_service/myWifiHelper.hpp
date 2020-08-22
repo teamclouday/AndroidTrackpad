@@ -6,6 +6,11 @@ class WifiManager
 public:
 	WifiManager();
 	~WifiManager();
+	void start();
+	void stop();
 private:
-
+	void initialize();
+public:
+	bool initialized = false;
+private:
 };
