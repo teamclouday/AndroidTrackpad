@@ -5,7 +5,14 @@
 ### Dependencies  
 * SDL2  
 * ImGui  
-* OpenGL3  
+* OpenGL3 (GLEW)  
+
+### How to build  
+Prepare ```external/glew```, ```external/ImGui```, and ```external/SDL2``` under this folder (download from website)  
+with ```include``` and ```lib``` (or ```src``` in case of ImGui) folder in each  
+libs for glew should be compiled static (both in x86 and x64)  
+libs for SDL2 should have both x86 and x64, and put with dll into ```lib```  
+Open solution file ```*.sln``` in visual studio and build  
 
 ------
 
