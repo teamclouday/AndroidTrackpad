@@ -13,6 +13,7 @@
   It will filter only PC devices, and tries to connect  
   Assumed that a P2P service has been running on target PC  
   Will try to exchange a unique ID before actual communication  
+  In this mode, android device is assumed to have connected to target deivce's Mobile hotspot
 
 ------
 

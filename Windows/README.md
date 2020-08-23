@@ -24,4 +24,6 @@ Open solution file ```*.sln``` in visual studio and build
   2. Communication manager thread  
   3. Trackpad manager thread  
 * Keyboard control on UI  
-  1. ESC to exit the program
+  ESC to exit the program  
+* Wifi mode notice  
+  In this mode, windows should launch Mobile hotspot for android device to connect  
