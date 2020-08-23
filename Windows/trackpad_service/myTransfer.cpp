@@ -128,6 +128,7 @@ void TransferManager::processRequest()
 		{
 			if (GLOB_CONNECTED)
 			{
+				myWifiManager->connection_should_stop = true;
 				myWifiManager->stop();
 				lock_UI.lock();
 				if (myUIManager)
