@@ -3,6 +3,7 @@
 
 #include <initguid.h>
 #include <mutex>
+#include <iostream>
 
 extern UIManager* myUIManager;
 extern std::mutex lock_UI;
@@ -31,48 +32,62 @@ void WifiManager::initialize()
 		UIManager::showWindowsMessageError("Failed to initialize Winsock version 2.2");
 		return;
 	}
-	// setup config
-	ADDRINFO* results = nullptr;
-	ADDRINFO hints = { 0 };
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
-	hints.ai_flags = AI_PASSIVE;
-	// get server address and port info
-	if (getaddrinfo(NULL, myLocalPort, &hints, &results))
+	// get adapter information
+	SOCKADDR_IN testAddr;
+	SOCKET testSocket = socket(AF_INET, SOCK_DGRAM, 0);
+	if (INVALID_SOCKET == testSocket)
 	{
-		UIManager::showWindowsMessageError("Failed to get server address information");
+		UIManager::showWindowsMessageError("Failed to open Wifi socket for test");
 		WSACleanup();
 		return;
 	}
+	memset(&testAddr, 0, sizeof(testAddr));
+	testAddr.sin_family = AF_INET;
+	inet_pton(AF_INET, test_server, &testAddr.sin_addr);
+	testAddr.sin_port = htons(53);
+	if (SOCKET_ERROR == connect(testSocket, (SOCKADDR*)&testAddr, sizeof(testAddr)))
+	{
+		UIManager::showWindowsMessageError(std::string("Failed to connect to test dns server: ") + test_server);
+		closesocket(testSocket);
+		WSACleanup();
+		return;
+	}
+	SOCKADDR_IN result;
+	int len = sizeof(result);
+	if (SOCKET_ERROR == getsockname(testSocket, (SOCKADDR*)&result, &len))
+	{
+		UIManager::showWindowsMessageError("Failed to get Wifi test socket information");
+		closesocket(testSocket);
+		WSACleanup();
+		return;
+	}
+	closesocket(testSocket);
+	// save current PC ip address information
+	char addrbuff[30];
+	inet_ntop(AF_INET, &result.sin_addr, addrbuff, 30);
+	localIP = std::string(addrbuff);
 	// create local socket
-	myLocalSocket = socket(results->ai_family, results->ai_socktype, results->ai_protocol);
+	SOCKADDR_IN hint = { 0 };
+	hint.sin_family = AF_INET;
+	hint.sin_port = htons(myLocalPort);
+	hint.sin_addr = result.sin_addr;
+	len = sizeof(hint);
+	myLocalSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (INVALID_SOCKET == myLocalSocket)
 	{
 		UIManager::showWindowsMessageError("Failed to open Wifi TCP socket");
-		freeaddrinfo(results);
 		WSACleanup();
 		return;
 	}
 	// bind local socket
-	if (SOCKET_ERROR == bind(myLocalSocket, results->ai_addr, (int)results->ai_addrlen))
+	if (SOCKET_ERROR == bind(myLocalSocket, (SOCKADDR*)&hint, len))
 	{
 		UIManager::showWindowsMessageError("Failed to bind Wifi TCP socket");
-		freeaddrinfo(results);
 		closesocket(myLocalSocket);
 		WSACleanup();
 		return;
 	}
-	// show current PC ip address information
-	lock_UI.lock();
-	if (myUIManager)
-	{
-		char addrbuff[30];
-		inet_ntop(AF_INET, &results->ai_addr, addrbuff, 30);
-		myUIManager->pushMessage("Current device IP = " + std::string(addrbuff));
-	}
-	lock_UI.unlock();
-	freeaddrinfo(results);
+	
 	initialized = true;
 }
 
@@ -81,7 +96,7 @@ void WifiManager::start()
 	if (!initialized) return;
 	lock_UI.lock();
 	if (myUIManager)
-		myUIManager->pushMessage("Wifi service starting (30s timeout)\nPlease wait");
+		myUIManager->pushMessage("Wifi service starting (60s timeout)\nPlease wait\nYour Local IP = " + localIP);
 	lock_UI.unlock();
 	// start listening
 	if (SOCKET_ERROR == listen(myLocalSocket, SOMAXCONN))
@@ -145,7 +160,7 @@ void WifiManager::start()
 	{
 		lock_UI.lock();
 		if (myUIManager)
-			myUIManager->pushMessage("Wifi cannot find an incoming connection after timeout of 30s\nPlease try again");
+			myUIManager->pushMessage("Wifi cannot find an incoming connection after timeout of 60s\nPlease try again");
 		lock_UI.unlock();
 		return;
 	}
@@ -204,12 +219,19 @@ void WifiManager::process()
 	GLOB_CONNECTED = false;
 	GLOB_LOCK.unlock();
 	// and close client socket
+	shutdown(myClientSocket, SD_SEND);
 	closesocket(myClientSocket);
 	myClientSocket = INVALID_SOCKET;
 }
 
 bool WifiManager::validate()
 {
-
+	if (myClientSocket == INVALID_SOCKET) return false;
+	char bytes[4];
+	int res = recv(myClientSocket, bytes, sizeof(int), 0);
+	if (res <= 0) return false;
+	int value;
+	memcpy(&value, bytes, sizeof(int));
+	if (value != validate_id) return false;
 	return true;
 }

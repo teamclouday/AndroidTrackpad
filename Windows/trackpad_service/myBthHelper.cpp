@@ -206,6 +206,7 @@ void BthManager::process()
 	GLOB_CONNECTED = false;
 	GLOB_LOCK.unlock();
 	// and close client socket
+	shutdown(myClientSocket, SD_SEND);
 	closesocket(myClientSocket);
 	myClientSocket = INVALID_SOCKET;
 }
