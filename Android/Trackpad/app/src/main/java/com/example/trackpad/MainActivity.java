@@ -2,8 +2,6 @@ package com.example.trackpad;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -209,7 +207,15 @@ public class MainActivity extends AppCompatActivity
                 }
                 else
                 {
-                    sleep();
+                    if(activity.managerWifi != null && activity.managerWifi.connected)
+                    {
+                        // test code
+                        activity.managerWifi.addData(new BufferSingle(DATA_TYPE.DATA_TYPE_MOVE, 1, 1, 1));
+                    }
+                    else
+                    {
+                        sleep();
+                    }
                 }
             }
         }
@@ -289,7 +295,22 @@ public class MainActivity extends AppCompatActivity
                     currentActivity.managerWifi = new myWifiManager(currentActivity);
                 }
                 else
+                {
                     currentActivity.managerWifi.initialize();
+                }
+                while(!currentActivity.managerWifi.decided)
+                {
+                    try
+                    {
+                        Thread.sleep(10);
+                    }
+                    catch(InterruptedException e)
+                    {
+                        break;
+                    }
+                }
+                currentActivity.managerWifi.decided = false;
+
                 if(!currentActivity.managerWifi.initialized)
                 {
                     final String error_msg = currentActivity.managerWifi.error_msg;
@@ -304,6 +325,12 @@ public class MainActivity extends AppCompatActivity
                 }
                 else
                 {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            refreshConnectInfo("Trying to connect to " + managerWifi.myServerIPAddr);
+                        }
+                    });
                     currentActivity.managerWifi.connect();
                     if(!currentActivity.managerWifi.connected)
                     {
@@ -471,12 +498,14 @@ public class MainActivity extends AppCompatActivity
             // disable click for radio buttons after connection
             findViewById(R.id.radioButtonBth).setEnabled(false);
             findViewById(R.id.radioButtonWifi).setEnabled(false);
+            findViewById(R.id.btn_connect).setEnabled(false);
         }
         else
         {
             // enable click for radio buttons after disconnect
             findViewById(R.id.radioButtonBth).setEnabled(true);
             findViewById(R.id.radioButtonWifi).setEnabled(true);
+            findViewById(R.id.btn_connect).setEnabled(true);
         }
     }
 }
