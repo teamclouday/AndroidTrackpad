@@ -202,6 +202,7 @@ void UIManager::draw_UI()
 	for (unsigned i = 0; i < myConnectInfo.size(); i++)
 	{
 		ImGui::Text(myConnectInfo[i].c_str());
+		ImGui::SetScrollHereY();
 	}
 	ImGui::PopTextWrapPos();
 
