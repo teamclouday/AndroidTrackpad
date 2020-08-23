@@ -38,12 +38,11 @@ public:
 	const int window_size_height = 400;
 	const int window_fps = 60;
 	bool initialized = false;
-	bool radio_bt_locked = false;
 private:
 	SDL_Window* myWindow = nullptr;
 	SDL_GLContext myGLContext = nullptr;
 	std::deque<std::string> myConnectInfo;
-	const unsigned connect_info_max_len = 200;
+	const unsigned connect_info_max_len = 500;
 	// set window background color
 	const ImVec4 window_color_bg = ImVec4(0.2f, 0.5f, 1.0f, 1.0f);
 	// set window foreground color

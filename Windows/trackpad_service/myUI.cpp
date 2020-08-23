@@ -1,6 +1,8 @@
 #include "myUI.hpp"
 #include "myTransfer.hpp"
 
+#include <imgui_internal.h>
+
 #include <Windows.h>
 #include <shellapi.h>
 
@@ -10,10 +12,11 @@
 
 extern std::mutex GLOB_LOCK;
 extern bool GLOB_PROGRAM_EXIT;
+extern bool GLOB_CONNECTED;
 extern TransferManager* myTranManager;
 extern std::mutex lock_Transfer;
 
-UIManager::UIManager()
+UIManager::UIManager() : myConnectInfo()
 {
 	if (!initialize_sdl()) return;
 	if (!initialize_glew())
@@ -108,8 +111,21 @@ void UIManager::draw_UI()
 	lock_Transfer.lock();
 	if (myTranManager)
 	{
+		// if already radio button lock required, then disable radio buttons
+		// different from GLOB_CONNECTED, since start button request may not result in a connected status
+		// but radio button should always be locked after a start button request to avoid error
+		if (GLOB_CONNECTED)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f);
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		}
 		ImGui::RadioButton("Wifi", reinterpret_cast<int*>(&myTranManager->transfer_type), 1);
 		ImGui::RadioButton("Bluetooth", reinterpret_cast<int*>(&myTranManager->transfer_type), 0);
+		if(GLOB_CONNECTED)
+		{
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
+		}
 	}
 	lock_Transfer.unlock();
 	ImGui::PopStyleColor();
@@ -126,9 +142,16 @@ void UIManager::draw_UI()
 	ImGui::PopStyleColor();
 	ImGui::PushStyleColor(ImGuiCol_Text, window_color_font_inside);
 
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
 	ImGui::PushStyleColor(ImGuiCol_Button, window_color_bt);
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, window_color_bt_hover);
 	ImGui::SetCursorPos(ImVec2(0.07f * window_size_width, 0.05f * window_size_height));
+	// if already connected, then disable the start service button
+	if (GLOB_CONNECTED)
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f);
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+	}
 	if (ImGui::Button("Start Service", ImVec2(0.3f * window_size_width, 0.12f * window_size_height)))
 	{
 		if (lock_Transfer.try_lock())
@@ -137,6 +160,11 @@ void UIManager::draw_UI()
 				myTranManager->start_requested = true;
 			lock_Transfer.unlock();
 		}
+	}
+	if (GLOB_CONNECTED)
+	{
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
 	}
 	ImGui::SetCursorPos(ImVec2(0.07f * window_size_width, 0.22f * window_size_height));
 	if (ImGui::Button("Stop Service", ImVec2(0.3f * window_size_width, 0.12f * window_size_height)))
@@ -156,6 +184,7 @@ void UIManager::draw_UI()
 	}
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
+	ImGui::PopStyleVar();
 
 	ImGui::PopStyleColor();
 	ImGui::End();
@@ -172,7 +201,7 @@ void UIManager::draw_UI()
 	ImGui::PushTextWrapPos(ImGui::GetFontSize() * 20.0f);
 	for (unsigned i = 0; i < myConnectInfo.size(); i++)
 	{
-		ImGui::Text(myConnectInfo.at(i).c_str());
+		ImGui::Text(myConnectInfo[i].c_str());
 	}
 	ImGui::PopTextWrapPos();
 

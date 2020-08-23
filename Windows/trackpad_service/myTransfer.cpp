@@ -36,6 +36,12 @@ void TransferManager::processRequest()
 	{
 		if (!myBthManager)
 		{
+			if (stop_requested)
+			{
+				// if not initialized and stop button clicked, ignore
+				stop_requested = false;
+				return;
+			}
 			myBthManager = new BthManager();
 			if (!myBthManager->initialized)
 			{
@@ -47,11 +53,6 @@ void TransferManager::processRequest()
 		}
 		if (start_requested)
 		{
-			// lock radio button
-			lock_UI.lock();
-			if (myUIManager)
-				myUIManager->radio_bt_locked = true;
-			lock_UI.unlock();
 			// if connected, skip request
 			if (GLOB_CONNECTED)
 			{
@@ -70,14 +71,11 @@ void TransferManager::processRequest()
 		{
 			if (GLOB_CONNECTED)
 			{
+				myBthManager->connection_should_stop = true;
 				myBthManager->stop();
 				lock_UI.lock();
 				if (myUIManager)
-				{
 					myUIManager->pushMessage("Bluetooth service has stopped");
-					// unlock radio button
-					myUIManager->radio_bt_locked = false;
-				}
 				lock_UI.unlock();
 			}
 			else
@@ -95,6 +93,12 @@ void TransferManager::processRequest()
 	{
 		if (!myWifiManager)
 		{
+			if (stop_requested)
+			{
+				// if not initialized and stop button clicked, ignore
+				stop_requested = false;
+				return;
+			}
 			myWifiManager = new WifiManager();
 			if (!myWifiManager->initialized)
 			{
@@ -106,11 +110,6 @@ void TransferManager::processRequest()
 		}
 		if (start_requested)
 		{
-			// lock radio button
-			lock_UI.lock();
-			if (myUIManager)
-				myUIManager->radio_bt_locked = true;
-			lock_UI.unlock();
 			// if connected, skip request
 			if (GLOB_CONNECTED)
 			{
@@ -132,11 +131,7 @@ void TransferManager::processRequest()
 				myWifiManager->stop();
 				lock_UI.lock();
 				if (myUIManager)
-				{
 					myUIManager->pushMessage("Wifi P2P service has stopped");
-					// unlock radio button
-					myUIManager->radio_bt_locked = false;
-				}
 				lock_UI.unlock();
 			}
 			else
