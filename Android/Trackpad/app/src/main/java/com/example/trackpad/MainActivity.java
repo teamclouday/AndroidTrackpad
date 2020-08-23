@@ -14,30 +14,224 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+
 
 public class MainActivity extends AppCompatActivity
 {
+    // define connection type
     enum CONNECTION_TYPE
     {
         CONNECTION_TYPE_WIFI,
         CONNECTION_TYPE_BTH,
-    };
+    }
+    // define data type for communication
+    enum DATA_TYPE
+    {
+        DATA_TYPE_CLICK_LEFT    (0),
+        DATA_TYPE_CLICK_RIGHT   (1),
+        DATA_TYPE_SCROLL_HORI   (2),
+        DATA_TYPE_SCROLL_VERT   (3),
+        DATA_TYPE_MOVE          (4);
 
+        private final int value;
+        DATA_TYPE(int value)
+        {
+            this.value = value;
+        }
+        public int getValue()
+        {
+            return value;
+        }
+    }
+    // define a single package structure
+    public static class BufferSingle
+    {
+        public DATA_TYPE type;
+        public int posX;
+        public int posY;
+        public int time;
+        public BufferSingle(DATA_TYPE type, int posX, int posY, int time)
+        {
+            this.type = type;
+            this.posX = posX;
+            this.posY = posY;
+            this.time = time;
+        }
+    }
+    // define a helper class for managing data packages
+    public static class BufferData
+    {
+        public final int MAX_SIZE = 50;
+        private ArrayList<BufferSingle> buff = new ArrayList<>();
+
+        public synchronized void addData(DATA_TYPE type, int posX, int posY, int time)
+        {
+            if(buff.size() >= MAX_SIZE) return;
+            BufferSingle data = new BufferSingle(type, posX, posY, time);
+            buff.add(data);
+        }
+
+        public synchronized void addData(BufferSingle data)
+        {
+            if(buff.size() >= MAX_SIZE) return;
+            buff.add(data);
+        }
+
+        public synchronized BufferSingle getData()
+        {
+            if(buff.size() <= 0) return null;
+            return buff.remove(0);
+        }
+
+        public synchronized int size()
+        {
+            return buff.size();
+        }
+    }
+    // set default connection type to Wifi
     protected CONNECTION_TYPE connection_type = CONNECTION_TYPE.CONNECTION_TYPE_WIFI;
-
+    // set log tag for logging
     protected final String logTag = "AndroidTrackpad";
 
     protected myBthManager managerBth = null;
     protected myWifiManager managerWifi = null;
+    private Thread managerThread;
+    private Thread trackpadThread;
+
+    // a runnable that tries to transfer data if certain managers are alive (connected)
+    class myManagerRunnable implements Runnable
+    {
+        private MainActivity activity;
+        public myManagerRunnable(MainActivity activity)
+        {
+            super();
+            this.activity = activity;
+        }
+
+        @Override
+        public void run()
+        {
+            // while loop until this thread is interrupted (app exit)
+            while(!Thread.interrupted())
+            {
+                if(activity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_BTH &&
+                activity.managerBth != null)
+                {
+                    if(activity.managerBth.initialized && activity.managerBth.connected)
+                    {
+                        if(!activity.managerBth.sendMessage())
+                        {
+                            final String error_msg = activity.managerBth.error_msg;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    refreshConnectInfo(error_msg);
+                                    refreshConnectInfo("You will be disconnected");
+                                }
+                            });
+                            new disconnectButtonClickTask().execute(activity);
+                            sleep();
+                        }
+                    }
+                    else
+                    {
+                        sleep();
+                    }
+                }
+                else if(activity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_WIFI &&
+                activity.managerWifi != null)
+                {
+                    if(activity.managerWifi.initialized && activity.managerWifi.connected)
+                    {
+                        if(!activity.managerWifi.sendMessage())
+                        {
+                            final String error_msg = activity.managerWifi.error_msg;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    refreshConnectInfo(error_msg);
+                                    refreshConnectInfo("You will be disconnected");
+                                }
+                            });
+                            new disconnectButtonClickTask().execute(activity);
+                            sleep();
+                        }
+                    }
+                    else
+                    {
+                        sleep();
+                    }
+                }
+                else
+                {
+                    sleep();
+                }
+            }
+        }
+        // sleep for 50 milliseconds to avoid heavy CPU usage
+        private void sleep()
+        {
+            try
+            {
+                Thread.sleep(50);
+            }
+            catch(InterruptedException e){}
+        }
+    }
+    // a runnable that manage the trackpad service
+    class myTrackpadRunnable implements Runnable
+    {
+        private MainActivity activity;
+
+        public myTrackpadRunnable(MainActivity activity)
+        {
+            this.activity = activity;
+        }
+
+        @Override
+        public void run()
+        {
+            while(!Thread.interrupted())
+            {
+                // just test code
+                if(activity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_BTH)
+                {
+                    if(activity.managerBth != null && activity.managerBth.connected)
+                    {
+                        // test code
+                        activity.managerBth.addData(new BufferSingle(DATA_TYPE.DATA_TYPE_MOVE, 1, 1, 1));
+                    }
+                    else
+                    {
+                        sleep();
+                    }
+                }
+                else
+                {
+                    sleep();
+                }
+            }
+        }
+
+        private void sleep()
+        {
+            try
+            {
+                Thread.sleep(50);
+            }
+            catch(InterruptedException e){}
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // set title of the activity
         setTitle(R.string.app_fullname);
-
-        // set radio group listener
+        // set radio group listener for connection type change
         RadioGroup radioGroup = findViewById(R.id.connection_options);
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
@@ -53,11 +247,18 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         });
+        // start the manager thread
+        managerThread = new Thread(new myManagerRunnable(this));
+        managerThread.start();
+        // start the trackpad thread
+        trackpadThread = new Thread(new myTrackpadRunnable(this));
+        trackpadThread.start();
     }
 
     // onclick event for Connect button
     // run in background to avoid UI stuck
-
+    // this async task will create a certain manager class object if required
+    // and trigger connect method
     private final class connectButtonClickTask extends AsyncTask<MainActivity, Void, Void>
     {
         private boolean taskfail = false;
@@ -197,15 +398,15 @@ public class MainActivity extends AppCompatActivity
             findViewById(R.id.btn_connect).setClickable(true);
         }
     }
-
     public void connectButtonClick(View view)
     {
+        // run the async task
         new connectButtonClickTask().execute(this);
     }
 
     // onclick event for Disconnect button
     // run in background to avoid UI stuck
-
+    // this async task will trigger disconnect method
     private final class disconnectButtonClickTask extends AsyncTask<MainActivity, Void, Void>
     {
         @Override
@@ -213,11 +414,13 @@ public class MainActivity extends AppCompatActivity
             MainActivity currentActivity = mainActivities[0];
             if (currentActivity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_WIFI)
             {
-                currentActivity.managerWifi.disconnect();
+                if(currentActivity.managerWifi != null && currentActivity.managerWifi.initialized)
+                    currentActivity.managerWifi.disconnect();
             }
             else if (currentActivity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_BTH)
             {
-                currentActivity.managerBth.disconnect();
+                if(currentActivity.managerBth != null && currentActivity.managerBth.initialized)
+                    currentActivity.managerBth.disconnect();
             }
             return null;
         }
@@ -226,17 +429,20 @@ public class MainActivity extends AppCompatActivity
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             toggleConnectionState(false);
+            // send message
+            Toast.makeText(getApplicationContext(), "You have been disconnected", Toast.LENGTH_SHORT).show();
         }
     }
-
     public void disconnectButtonClick(View view)
     {
+        // run the async task
         new disconnectButtonClickTask().execute(this);
     }
 
     // onclick event for Enter trackpad button
     public void trackpadButtonClick(View view)
     {
+        // launch the trackpad activity
         Intent intent = new Intent(this, TrackpadActivity.class);
         startActivity(intent);
     }
@@ -244,13 +450,15 @@ public class MainActivity extends AppCompatActivity
     // onclick event for Help button
     public void helpButtonClick(View view)
     {
-        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com"));
+        // help button will open the github page of this project
+        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/teamclouday/AndroidTrackpad/tree/master/Android"));
         startActivity(browserIntent);
     }
 
     // refresh connection information in text view
     protected void refreshConnectInfo(String newMsg)
     {
+        // add new message to connection information text view
         TextView infoText = findViewById(R.id.textViewConnectInfo);
         infoText.append(newMsg + "\n");
     }

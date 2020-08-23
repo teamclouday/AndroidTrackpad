@@ -11,7 +11,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.UUID;
 
@@ -27,6 +30,8 @@ public class myBthManager
     private final int REQUEST_ENABLE_BIT = 1;
     private final UUID CONNECTION_UUID = UUID.fromString("97c4eab8-234b-42d0-8c09-e9a5b1f1ba5b");
     private final String logTag = "TrackpadBth";
+
+    public static MainActivity.BufferData buffer = new MainActivity.BufferData();
 
     public boolean initialized = false;
     public boolean connected = false;
@@ -113,10 +118,63 @@ public class myBthManager
         connected = true;
     }
 
+    public synchronized void addData(MainActivity.BufferSingle data)
+    {
+        buffer.addData(data);
+    }
+
     public boolean sendMessage()
     {
         if(!connected) return false;
-
+        // try to get output stream
+        OutputStream stream;
+        try
+        {
+            stream = mySocket.getOutputStream();
+        }
+        catch(IOException e)
+        {
+            error_msg = "Error: failed to get output stream from bluetooth socket";
+            return false;
+        }
+        // prepare data to send
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        MainActivity.BufferSingle data = null;
+        do
+        {
+            data = buffer.getData();
+            if(data == null) break;
+            // init a byte buffer
+            ByteBuffer bb = ByteBuffer.allocate(4);
+            // set message start indicator
+            bb.putInt(10086);
+            outputStream.write(bb.array(), 0, 4);
+            bb.clear();
+            // set type as int
+            bb.putInt(data.type.getValue());
+            outputStream.write(bb.array(), 0, 4);
+            bb.clear();
+            // set posX
+            bb.putInt(data.posX);
+            outputStream.write(bb.array(), 0, 4);
+            bb.clear();
+            // set posY
+            bb.putInt(data.posY);
+            outputStream.write(bb.array(), 0, 4);
+            bb.clear();
+            // set time
+            bb.putInt(data.time);
+            outputStream.write(bb.array(), 0, 4);
+        }while(true);
+        try
+        {
+            stream.write(outputStream.toByteArray());
+        }
+        catch(IOException e)
+        {
+            error_msg = "Error: failed to write to output stream in bluetooth socket";
+            return false;
+        }
         return true;
     }
 
@@ -191,7 +249,10 @@ public class myBthManager
                 if (device.getBluetoothClass().getMajorDeviceClass() == BluetoothClass.Device.Major.COMPUTER)
                 {
                     if (testDeviceConnection(device))
+                    {
                         targetDevice = device;
+                        break;
+                    }
                 }
             }
         }
@@ -215,14 +276,14 @@ public class myBthManager
         }
         catch (IOException connectExp)
         {
-            Log.d(logTag, "testDeviceConnection: paired PC MAC address = " + device.getAddress() + " Name = " + device.getName() + "socket failed to connect");
+            Log.d(logTag, "testDeviceConnection: paired PC MAC address = " + device.getAddress() + " Name = " + device.getName() + " socket failed to connect");
             try
             {
                 tmp.close();
             }
             catch (IOException closeExp)
             {
-                Log.d(logTag, "testDeviceConnection: paired PC MAC address = " + device.getAddress() + " Name = " + device.getName() + "socket failed to close");
+                Log.d(logTag, "testDeviceConnection: paired PC MAC address = " + device.getAddress() + " Name = " + device.getName() + " socket failed to close");
             }
             return false;
         }
@@ -232,7 +293,7 @@ public class myBthManager
         }
         catch (IOException e)
         {
-            Log.d(logTag, "testDeviceConnection: paired PC MAC address = " + device.getAddress() + " Name = " + device.getName() + "socket failed to close");
+            Log.d(logTag, "testDeviceConnection: paired PC MAC address = " + device.getAddress() + " Name = " + device.getName() + " socket failed to close");
         }
         return true;
     }

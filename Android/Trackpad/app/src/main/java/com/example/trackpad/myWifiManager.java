@@ -60,6 +60,8 @@ public class myWifiManager
 
     private final String logTag = "TrackpadWifi";
 
+    public static MainActivity.BufferData buffer = new MainActivity.BufferData();
+
     public boolean initialized = false;
     public boolean connected = false;
     public String error_msg = "";
@@ -135,6 +137,13 @@ public class myWifiManager
     {
 
         connected = true;
+    }
+
+    public boolean sendMessage()
+    {
+        if(!connected) return false;
+
+        return true;
     }
 
     public void disconnect()
