@@ -6,6 +6,7 @@
 * SDL2  
 * ImGui  
 * OpenGL3 (GLEW)  
+* WinSock2 (ws2_32.lib)  
 
 ### How to build  
 Prepare ```external/glew```, ```external/ImGui```, and ```external/SDL2``` under this folder (download from website)  
@@ -22,3 +23,5 @@ Open solution file ```*.sln``` in visual studio and build
   1. UI manager thread  
   2. Communication manager thread  
   3. Trackpad manager thread  
+* Keyboard control on UI  
+  1. ESC to exit the program
