@@ -2,7 +2,6 @@
 
 #include <WinSock2.h>
 #include <ws2bth.h>
-#include <bluetoothapis.h>
 
 #include <string>
 #include <thread>
@@ -15,11 +14,6 @@
 // This class manage bluetooth communication
 class BthManager
 {
-	struct PackageInfo
-	{
-		uint32_t lengthReceived;
-	};
-
 public:
 	BthManager();
 	~BthManager();
