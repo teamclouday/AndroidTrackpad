@@ -13,6 +13,13 @@ import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 
 // reference: https://developer.android.com/guide/topics/connectivity/wifip2p
@@ -23,8 +30,23 @@ public class myWifiManager
     private WifiP2pManager myManager;
     private WifiP2pManager.Channel myChannel;
     private WifiP2pDevice targetDevice = null;
+    private Socket mySocket = null;
+    private final int myServerPort = 10086;
 
-    private WifiP2pManager.PeerListListener myPeerListener = new WifiP2pManager.PeerListListener() {
+    private final String logTag = "TrackpadWifi";
+
+    public static MainActivity.BufferData buffer = new MainActivity.BufferData();
+
+    public boolean initialized = false;
+    public boolean connected = false;
+    public String error_msg = "";
+
+    protected boolean discoveryDone = false;
+    protected boolean connected_test = false;
+    protected final Object lock = new Object();
+
+    private WifiP2pManager.PeerListListener myPeerListener = new WifiP2pManager.PeerListListener()
+    {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList peers) {
             Collection<WifiP2pDevice> devices = peers.getDeviceList();
@@ -57,18 +79,6 @@ public class myWifiManager
             }
         }
     };
-
-    private final String logTag = "TrackpadWifi";
-
-    public static MainActivity.BufferData buffer = new MainActivity.BufferData();
-
-    public boolean initialized = false;
-    public boolean connected = false;
-    public String error_msg = "";
-
-    protected boolean discoveryDone = false;
-    protected boolean connected_test = false;
-    protected final Object lock = new Object();
 
     public class WifiDirectBroadcastReceiver extends BroadcastReceiver
     {
@@ -135,20 +145,117 @@ public class myWifiManager
 
     public void connect()
     {
+        if(targetDevice == null) return;
+        if(mySocket == null)
+            mySocket = new Socket();
+        WifiP2pConfig config = new WifiP2pConfig();
+        config.deviceAddress = targetDevice.deviceAddress;
+        myManager.connect(myChannel, config, new WifiP2pManager.ActionListener()
+        {
+            @Override
+            public void onSuccess()
+            {
+                try
+                {
+                    mySocket.bind(null);
+                }
+                catch(IOException e)
+                {
+                    return;
+                }
+                try
+                {
+                    mySocket.connect((new InetSocketAddress(targetDevice.deviceAddress, myServerPort)), 10000); // timeout for 10 seconds
+                }
+                catch(IOException e)
+                {
+                    return;
+                }
+                connected = true;
+            }
 
-        connected = true;
+            @Override
+            public void onFailure(int reason)
+            {
+                connected = false;
+            }
+        });
+    }
+
+    public synchronized void addData(MainActivity.BufferSingle data)
+    {
+        buffer.addData(data);
     }
 
     public boolean sendMessage()
     {
         if(!connected) return false;
-
+        if(mySocket == null) return false;
+        // try to get output stream
+        OutputStream stream;
+        try
+        {
+            stream = mySocket.getOutputStream();
+        }
+        catch(IOException e)
+        {
+            error_msg = "Error: failed to get output stream from wifi socket";
+            return false;
+        }
+        // prepare data to send
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        MainActivity.BufferSingle data = null;
+        do
+        {
+            data = buffer.getData();
+            if(data == null) break;
+            // init a byte buffer
+            ByteBuffer bb = ByteBuffer.allocate(4);
+            // set message start indicator
+            bb.putInt(10086);
+            outputStream.write(bb.array(), 0, 4);
+            bb.clear();
+            // set type as int
+            bb.putInt(data.type.getValue());
+            outputStream.write(bb.array(), 0, 4);
+            bb.clear();
+            // set posX
+            bb.putInt(data.posX);
+            outputStream.write(bb.array(), 0, 4);
+            bb.clear();
+            // set posY
+            bb.putInt(data.posY);
+            outputStream.write(bb.array(), 0, 4);
+            bb.clear();
+            // set time
+            bb.putInt(data.time);
+            outputStream.write(bb.array(), 0, 4);
+        }while(true);
+        try
+        {
+            stream.write(outputStream.toByteArray());
+        }
+        catch(IOException e)
+        {
+            error_msg = "Error: failed to write to output stream in wifi socket";
+            return false;
+        }
         return true;
     }
 
     public void disconnect()
     {
-
+        if(mySocket == null)
+        {
+            connected = false;
+            return;
+        }
+        try
+        {
+            mySocket.close();
+        }
+        catch (IOException e){}
+        mySocket = null;
         connected = false;
     }
 
@@ -261,7 +368,6 @@ public class myWifiManager
         connected_test = false;
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
-        config.wps.setup = WpsInfo.PBC;
         myManager.connect(myChannel, config, new WifiP2pManager.ActionListener()
         {
             @Override

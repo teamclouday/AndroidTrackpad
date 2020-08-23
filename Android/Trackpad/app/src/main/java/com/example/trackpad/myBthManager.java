@@ -86,6 +86,7 @@ public class myBthManager
 
     public void connect()
     {
+        if(targetDevice == null) return;
         BluetoothSocket tmp;
         try
         {
@@ -126,6 +127,7 @@ public class myBthManager
     public boolean sendMessage()
     {
         if(!connected) return false;
+        if(mySocket == null) return false;
         // try to get output stream
         OutputStream stream;
         try
