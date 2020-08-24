@@ -27,3 +27,12 @@ Open solution file ```*.sln``` in visual studio and build
   ESC to exit the program  
 * Wifi mode notice  
   In this mode, windows should launch Mobile hotspot for android device to connect  
+
+------
+
+### Known Issues  
+* Program will not exit immediately if service is starting and UI exits  
+  This is because the ```select``` function with a defined timeout is blocking the communication manager thread  
+  Possible solutions can be found [here](https://stackoverflow.com/questions/3333361/how-to-cancel-waiting-in-select-on-windows)  
+  I just don't bother to wait for 60s  
+
