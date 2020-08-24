@@ -30,7 +30,7 @@ Connect your Android phone to Windows or Linux system as a trackpad
         float velY;
     };
    ```
-   ```velX``` and ```velY``` are used as velocity when type is a movement  
+   ```velX``` and ```velY``` are used as distance when type is a movement  
 4. Trackpad sensitivity control  
 
 ------
