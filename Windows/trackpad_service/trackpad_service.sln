@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.30406.217
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "trackpad_service", "trackpad_service.vcxproj", "{6D6827E2-A36B-4218-9353-46634637B7F4}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "TrackpadServiceInstaller", "..\TrackpadServiceInstaller\TrackpadServiceInstaller.vdproj", "{38AD21E7-3A83-4C27-853B-1956D6038C4A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,11 @@ Global
 		{6D6827E2-A36B-4218-9353-46634637B7F4}.Release|x64.Build.0 = Release|x64
 		{6D6827E2-A36B-4218-9353-46634637B7F4}.Release|x86.ActiveCfg = Release|Win32
 		{6D6827E2-A36B-4218-9353-46634637B7F4}.Release|x86.Build.0 = Release|Win32
+		{38AD21E7-3A83-4C27-853B-1956D6038C4A}.Debug|x64.ActiveCfg = Debug
+		{38AD21E7-3A83-4C27-853B-1956D6038C4A}.Debug|x86.ActiveCfg = Debug
+		{38AD21E7-3A83-4C27-853B-1956D6038C4A}.Release|x64.ActiveCfg = Release
+		{38AD21E7-3A83-4C27-853B-1956D6038C4A}.Release|x86.ActiveCfg = Release
+		{38AD21E7-3A83-4C27-853B-1956D6038C4A}.Release|x86.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

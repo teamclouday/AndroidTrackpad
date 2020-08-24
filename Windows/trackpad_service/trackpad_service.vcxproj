@@ -75,24 +75,28 @@
     <IncludePath>$(ProjectDir)..\external\SDL2\include;$(ProjectDir)..\external\ImGui\include;$(ProjectDir)..\external\glew\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)..\external\SDL2\lib\x86;$(ProjectDir)..\external\glew\lib\Win32;$(LibraryPath)</LibraryPath>
     <SourcePath>$(ProjectDir)..\external\ImGui\src;$(SourcePath)</SourcePath>
+    <TargetName>TrackpadService</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDir)..\external\SDL2\include;$(ProjectDir)..\external\ImGui\include;$(ProjectDir)..\external\glew\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)..\external\SDL2\lib\x86;$(ProjectDir)..\external\glew\lib\Win32;$(LibraryPath)</LibraryPath>
     <SourcePath>$(ProjectDir)..\external\ImGui\src;$(SourcePath)</SourcePath>
+    <TargetName>TrackpadService</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)..\external\SDL2\include;$(ProjectDir)..\external\ImGui\include;$(ProjectDir)..\external\glew\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)..\external\SDL2\lib\x64;$(ProjectDir)..\external\glew\lib\x64;$(LibraryPath)</LibraryPath>
     <SourcePath>$(ProjectDir)..\external\ImGui\src;$(SourcePath)</SourcePath>
+    <TargetName>TrackpadService</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDir)..\external\SDL2\include;$(ProjectDir)..\external\ImGui\include;$(ProjectDir)..\external\glew\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)..\external\SDL2\lib\x64;$(ProjectDir)..\external\glew\lib\x64;$(LibraryPath)</LibraryPath>
     <SourcePath>$(ProjectDir)..\external\ImGui\src;$(SourcePath)</SourcePath>
+    <TargetName>TrackpadService</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -194,6 +198,14 @@
     <ClInclude Include="myTransfer.hpp" />
     <ClInclude Include="myUI.hpp" />
     <ClInclude Include="myWifiHelper.hpp" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="resource1.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="trackpad_service.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="trackpad_icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
