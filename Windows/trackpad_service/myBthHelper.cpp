@@ -254,4 +254,13 @@ void BthManager::process()
 		}
 	}
 	while (!GLOB_PROGRAM_EXIT);
+	// close the client socket
+	if (myClientSocket != INVALID_SOCKET)
+	{
+		closesocket(myClientSocket);
+		myClientSocket = INVALID_SOCKET;
+	}
+	GLOB_LOCK.lock();
+	GLOB_CONNECTED = false;
+	GLOB_LOCK.unlock();
 }

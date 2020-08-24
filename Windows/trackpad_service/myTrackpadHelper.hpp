@@ -75,11 +75,12 @@ public:
 	void process();
 	void addData(DATA_PACK newData);
 private:
-	void mouseLeftClick();
+	void mouseLeftClick(float flag);
 	void mouseRightClick();
 	void scrollHorizontal(float delta);
 	void scrollVertical(float delta);
 	void dragStart();
+	void dragStop();
 	void move(float deltaX, float deltaY);
 
 public:

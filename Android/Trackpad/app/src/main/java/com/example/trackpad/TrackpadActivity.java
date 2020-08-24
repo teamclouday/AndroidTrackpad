@@ -251,7 +251,8 @@ public class TrackpadActivity extends AppCompatActivity
                     myCircles.clear();
 
                     // prepare data pack
-                    if(touch_pointer_click || (System.currentTimeMillis() - touch_timer <= 50))
+                    long delta = System.currentTimeMillis() - touch_timer;
+                    if(touch_pointer_click && (delta <= 300) && (delta > 30))
                     {
                         // this is a click event
                         if(touch_pointer_count == 1)
@@ -259,7 +260,7 @@ public class TrackpadActivity extends AppCompatActivity
                             // left click
                             // but wait for possible double click
                             performClick();
-                            postDelayed(delayedSingleClick, 110);
+                            postDelayed(delayedSingleClick, 100);
                         }
                         else if(touch_pointer_count == 2)
                         {
@@ -275,8 +276,8 @@ public class TrackpadActivity extends AppCompatActivity
                     touch_pointer_click = true;
                     if(touch_double_clicked)
                     {
-                        // send a simple click event to disable dragging
-                        MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_CLICK_LEFT, 0, 0));
+                        // send a click event to disable dragging (with velX != 0)
+                        MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_CLICK_LEFT, 1.0f, 0));
                         touch_double_clicked = false;
                     }
 
@@ -286,7 +287,7 @@ public class TrackpadActivity extends AppCompatActivity
                     // Log.d(logTag, "onTouchEvent: cancel");
 
                     // reset gesture information
-                    touch_timer = System.currentTimeMillis();
+                    touch_timer = 0;
                     touch_pointer_count = 0;
                     touch_pointer_click = true;
                     touch_double_clicked = false;
