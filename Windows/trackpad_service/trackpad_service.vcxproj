@@ -182,6 +182,7 @@
     <ClCompile Include="..\external\ImGui\src\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="myBthHelper.cpp" />
+    <ClCompile Include="myTrackpadHelper.cpp" />
     <ClCompile Include="myTransfer.cpp" />
     <ClCompile Include="myUI.cpp" />
     <ClCompile Include="myWifiHelper.cpp" />
@@ -189,6 +190,7 @@
   <ItemGroup>
     <ClInclude Include="main.hpp" />
     <ClInclude Include="myBthHelper.hpp" />
+    <ClInclude Include="myTrackpadHelper.hpp" />
     <ClInclude Include="myTransfer.hpp" />
     <ClInclude Include="myUI.hpp" />
     <ClInclude Include="myWifiHelper.hpp" />

@@ -8,7 +8,7 @@
 
 // reference: https://docs.microsoft.com/en-us/windows/win32/winsock/getting-started-with-winsock
 
-#define WIFI_BUFFER_SIZE 512
+#define WIFI_BUFFER_SIZE 256
 
 // This class manage wifi p2p communication
 class WifiManager

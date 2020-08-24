@@ -9,7 +9,7 @@
 // reference1: https://docs.microsoft.com/en-us/windows/win32/bluetooth/bluetooth-programming-with-windows-sockets
 // reference2: https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedotherprotocol4p.html
 
-#define BLUETOOTH_BUFFER_SIZE 512
+#define BLUETOOTH_BUFFER_SIZE 256
 
 // This class manage bluetooth communication
 class BthManager

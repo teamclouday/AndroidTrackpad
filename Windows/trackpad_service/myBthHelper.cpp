@@ -1,11 +1,15 @@
 #include "myBthHelper.hpp"
 #include "myUI.hpp"
+#include "myTrackpadHelper.hpp"
 
 #include <initguid.h>
 #include <mutex>
 
 extern UIManager* myUIManager;
 extern std::mutex lock_UI;
+extern TrackpadManager* myTrackManager;
+extern std::mutex lock_Track;
+
 extern bool GLOB_CONNECTED;
 extern bool GLOB_PROGRAM_EXIT;
 extern std::mutex GLOB_LOCK;
@@ -139,6 +143,8 @@ void BthManager::start()
 				myUIManager->pushMessage("Bluetooth Connected\n" + std::string(message));
 			lock_UI.unlock();
 			// start the process thread to process received data
+			if (processThread.joinable())
+				processThread.join();
 			processThread = std::thread(&BthManager::process, this);
 		}
 	}
@@ -154,15 +160,17 @@ void BthManager::start()
 
 void BthManager::stop()
 {
-	// first try to wait for the process thread
-	if(processThread.joinable())
-		processThread.join();
 	GLOB_LOCK.lock();
 	GLOB_CONNECTED = false;
 	GLOB_LOCK.unlock();
 	if (myClientSocket != INVALID_SOCKET)
+		shutdown(myClientSocket, SD_SEND);
+	// wait for the process thread
+	if(processThread.joinable())
+		processThread.join();
+	// close the client socket
+	if (myClientSocket != INVALID_SOCKET)
 	{
-		// close the client socket
 		closesocket(myClientSocket);
 		myClientSocket = INVALID_SOCKET;
 	}
@@ -180,33 +188,73 @@ void BthManager::process()
 			break;
 		}
 		result = recv(myClientSocket, buffer, BLUETOOTH_BUFFER_SIZE, 0);
-		lock_UI.lock();
-		if (result > 0)
+		if (result > sizeof(uint32_t))
 		{
-			char message[100];
-			sprintf_s(message, "Received %d bytes from device", result);
-			if (myUIManager)
-				myUIManager->pushMessage(std::string(message));
+			bool isLittleEndian = TrackpadManager::DATA_PACK::is_little_endian();
+			char* ptr = buffer;
+			uint32_t tmp = 0;
+			int tmp_int = 0;
+			int tmp_float = 0.0f;
+			// first find the validation code position
+			std::memcpy(&tmp, buffer, sizeof(uint32_t));
+			tmp_int = isLittleEndian ? TrackpadManager::DATA_PACK::reverse_bytes_int(tmp) : (int)tmp;
+			while ((tmp_int != DATA_VALIDATION_CODE) && (result > sizeof(uint32_t)))
+			{
+				std::memcpy(&tmp, ptr, sizeof(uint32_t));
+				tmp_int = isLittleEndian ? TrackpadManager::DATA_PACK::reverse_bytes_int(tmp) : (int)tmp;
+				ptr += sizeof(uint32_t); // find next 4 bytes
+				result -= sizeof(uint32_t);
+			}
+			while (result >= (4 * sizeof(uint32_t)) && !GLOB_PROGRAM_EXIT)
+			{
+				TrackpadManager::DATA_PACK newData = { 0 };
+				std::memcpy(&tmp, ptr, sizeof(uint32_t));
+				tmp_int = isLittleEndian ? TrackpadManager::DATA_PACK::reverse_bytes_int(tmp) : (int)tmp;
+				if (tmp_int == DATA_VALIDATION_CODE)
+				{
+					std::memcpy(&tmp, ptr + sizeof(uint32_t), sizeof(uint32_t));
+					tmp_int = isLittleEndian ? TrackpadManager::DATA_PACK::reverse_bytes_int(tmp) : (int)tmp;
+					newData.type = tmp_int;
+					std::memcpy(&tmp, ptr + 2*sizeof(uint32_t), sizeof(uint32_t));
+					tmp_float = isLittleEndian ? TrackpadManager::DATA_PACK::reverse_bytes_float(tmp) : (float)tmp;
+					newData.velX = tmp_float;
+					std::memcpy(&tmp, ptr + 3*sizeof(uint32_t), sizeof(uint32_t));
+					tmp_float = isLittleEndian ? TrackpadManager::DATA_PACK::reverse_bytes_float(tmp) : (float)tmp;
+					newData.velY = tmp_float;
+					lock_Track.lock();
+					if (myTrackManager)
+						myTrackManager->addData(newData);
+					lock_Track.unlock();
+					ptr += 4 * sizeof(uint32_t);
+					result -= 4 * sizeof(uint32_t);
+				}
+				else
+				{
+					ptr += sizeof(uint32_t);
+					result -= sizeof(uint32_t);
+				}
+			}
 		}
 		else if (result == 0)
 		{
+			lock_UI.lock();
 			if (myUIManager)
 				myUIManager->pushMessage("Device has disconnected");
+			lock_UI.unlock();
+			break;
+		}
+		else if(result < 0)
+		{
+			lock_UI.lock();
+			if (myUIManager)
+				myUIManager->pushMessage("An error occured during connection");
+			lock_UI.unlock();
+			break;
 		}
 		else
 		{
-			if (myUIManager)
-				myUIManager->pushMessage("An error occured during connection");
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
-		lock_UI.unlock();
 	}
-	while (result > 0);
-	// after receiving data, should set global state
-	GLOB_LOCK.lock();
-	GLOB_CONNECTED = false;
-	GLOB_LOCK.unlock();
-	// and close client socket
-	shutdown(myClientSocket, SD_SEND);
-	closesocket(myClientSocket);
-	myClientSocket = INVALID_SOCKET;
+	while (true);
 }
