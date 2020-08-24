@@ -30,7 +30,8 @@ public class MainActivity extends AppCompatActivity
         DATA_TYPE_CLICK_RIGHT   (1),
         DATA_TYPE_SCROLL_HORI   (2),
         DATA_TYPE_SCROLL_VERT   (3),
-        DATA_TYPE_MOVE          (4);
+        DATA_TYPE_DRAG          (4),
+        DATA_TYPE_MOVE          (5);
 
         private final int value;
         DATA_TYPE(int value)
@@ -46,27 +47,25 @@ public class MainActivity extends AppCompatActivity
     public static class BufferSingle
     {
         public DATA_TYPE type;
-        public int posX;
-        public int posY;
-        public int time;
-        public BufferSingle(DATA_TYPE type, int posX, int posY, int time)
+        public float velX;
+        public float velY;
+        public BufferSingle(DATA_TYPE type, float velX, float velY)
         {
             this.type = type;
-            this.posX = posX;
-            this.posY = posY;
-            this.time = time;
+            this.velX = velX;
+            this.velY = velY;
         }
     }
     // define a helper class for managing data packages
     public static class BufferData
     {
-        public final int MAX_SIZE = 50;
+        public final int MAX_SIZE = 20;
         private ArrayList<BufferSingle> buff = new ArrayList<>();
 
-        public synchronized void addData(DATA_TYPE type, int posX, int posY, int time)
+        public synchronized void addData(DATA_TYPE type, float velX, float velY)
         {
             if(buff.size() >= MAX_SIZE) return;
-            BufferSingle data = new BufferSingle(type, posX, posY, time);
+            BufferSingle data = new BufferSingle(type, velX, velY);
             buff.add(data);
         }
 
@@ -96,6 +95,7 @@ public class MainActivity extends AppCompatActivity
     protected myWifiManager managerWifi = null;
     private Thread managerThread;
     private Thread trackpadThread;
+    public static BufferData data_buffer = new BufferData();
 
     // a runnable that tries to transfer data if certain managers are alive (connected)
     class myManagerRunnable implements Runnable
@@ -192,13 +192,14 @@ public class MainActivity extends AppCompatActivity
         {
             while(!Thread.interrupted())
             {
-                // just test code
                 if(activity.connection_type == CONNECTION_TYPE.CONNECTION_TYPE_BTH)
                 {
                     if(activity.managerBth != null && activity.managerBth.connected)
                     {
-                        // test code
-                        activity.managerBth.addData(new BufferSingle(DATA_TYPE.DATA_TYPE_MOVE, 1, 1, 1));
+                        while(data_buffer.size() > 0)
+                        {
+                            activity.managerBth.addData(data_buffer.getData());
+                        }
                     }
                     else
                     {
@@ -209,8 +210,10 @@ public class MainActivity extends AppCompatActivity
                 {
                     if(activity.managerWifi != null && activity.managerWifi.connected)
                     {
-                        // test code
-                        activity.managerWifi.addData(new BufferSingle(DATA_TYPE.DATA_TYPE_MOVE, 1, 1, 1));
+                        while(data_buffer.size() > 0)
+                        {
+                            activity.managerWifi.addData(data_buffer.getData());
+                        }
                     }
                     else
                     {
@@ -228,6 +231,11 @@ public class MainActivity extends AppCompatActivity
             }
             catch(InterruptedException e){}
         }
+    }
+
+    public static synchronized void addData(BufferSingle data)
+    {
+        data_buffer.addData(data);
     }
 
     @Override

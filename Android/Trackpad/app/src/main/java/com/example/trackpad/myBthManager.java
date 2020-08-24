@@ -141,7 +141,7 @@ public class myBthManager
         }
         // prepare data to send
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        MainActivity.BufferSingle data = null;
+        MainActivity.BufferSingle data;
         do
         {
             data = buffer.getData();
@@ -156,16 +156,12 @@ public class myBthManager
             bb.putInt(data.type.getValue());
             outputStream.write(bb.array(), 0, 4);
             bb.clear();
-            // set posX
-            bb.putInt(data.posX);
+            // set velX
+            bb.putFloat(data.velX);
             outputStream.write(bb.array(), 0, 4);
             bb.clear();
-            // set posY
-            bb.putInt(data.posY);
-            outputStream.write(bb.array(), 0, 4);
-            bb.clear();
-            // set time
-            bb.putInt(data.time);
+            // set velY
+            bb.putFloat(data.velY);
             outputStream.write(bb.array(), 0, 4);
         }while(true);
         try

@@ -106,16 +106,12 @@ public class myWifiManager
             bb.putInt(data.type.getValue());
             outputStream.write(bb.array(), 0, 4);
             bb.clear();
-            // set posX
-            bb.putInt(data.posX);
+            // set velX
+            bb.putFloat(data.velX);
             outputStream.write(bb.array(), 0, 4);
             bb.clear();
-            // set posY
-            bb.putInt(data.posY);
-            outputStream.write(bb.array(), 0, 4);
-            bb.clear();
-            // set time
-            bb.putInt(data.time);
+            // set velY
+            bb.putFloat(data.velY);
             outputStream.write(bb.array(), 0, 4);
         }while(true);
         try
@@ -164,7 +160,7 @@ public class myWifiManager
                 AlertDialog.Builder builder = new AlertDialog.Builder(myActivity);
                 builder.setTitle("Enter IP address of target PC\n(Leave empty to skip)");
                 final EditText ipinput = new EditText(myActivity);
-                ipinput.setInputType(InputType.TYPE_CLASS_TEXT);
+                ipinput.setInputType(InputType.TYPE_CLASS_PHONE);
                 builder.setView(ipinput);
                 // Set up the buttons
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
