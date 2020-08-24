@@ -35,8 +35,6 @@ public class myWifiManager
     public boolean connected = false;
     public String error_msg = "";
 
-    protected final Object lock = new Object();
-
     public myWifiManager(Activity current_activity)
     {
         myActivity = current_activity;

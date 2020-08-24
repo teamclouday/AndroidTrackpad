@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -61,13 +60,6 @@ public class MainActivity extends AppCompatActivity
     {
         public final int MAX_SIZE = 50;
         private ArrayList<BufferSingle> buff = new ArrayList<>();
-
-        public synchronized void addData(DATA_TYPE type, float velX, float velY)
-        {
-            if(buff.size() >= MAX_SIZE) return;
-            BufferSingle data = new BufferSingle(type, velX, velY);
-            buff.add(data);
-        }
 
         public synchronized void addData(BufferSingle data)
         {

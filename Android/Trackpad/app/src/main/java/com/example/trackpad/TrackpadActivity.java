@@ -13,14 +13,12 @@ import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 
-import java.io.IOException;
 import java.util.HashSet;
 
 // reference: https://developer.android.com/training/gestures/movement
 
 public class TrackpadActivity extends AppCompatActivity
 {
-    private View myView;
     private final String logTag = "TrackpadManager";
     private final int MAX_POINTERS = 2; // only recognize at most 2 fingers
 
@@ -29,7 +27,7 @@ public class TrackpadActivity extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
         hideSystemUI();
-        myView = new TouchScreenView(this);
+        View myView = new TouchScreenView(this);
         setContentView(myView);
     }
 
@@ -95,6 +93,11 @@ public class TrackpadActivity extends AppCompatActivity
                 canvas.drawCircle(circle.centerX, circle.centerY, circle.radius, paint_front);
             }
             postInvalidateOnAnimation();
+        }
+
+        @Override
+        public boolean performClick() {
+            return super.performClick();
         }
 
         @Override
@@ -255,6 +258,7 @@ public class TrackpadActivity extends AppCompatActivity
                         {
                             // left click
                             // but wait for possible double click
+                            performClick();
                             postDelayed(delayedSingleClick, 110);
                         }
                         else if(touch_pointer_count == 2)
