@@ -35,4 +35,5 @@ Open solution file ```*.sln``` in visual studio and build
   This is because the ```select``` function with a defined timeout is blocking the communication manager thread  
   Possible solutions can be found [here](https://stackoverflow.com/questions/3333361/how-to-cancel-waiting-in-select-on-windows)  
   I just don't bother to wait for 60s  
-
+* The "Stop Service" button only works after anything is done on android side (either new input or connection close)  
+  This is because the ```recv``` function will pause the thread when no input is from the socket  
