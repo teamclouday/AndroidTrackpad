@@ -1,6 +1,7 @@
 #include "myTrackpadHelper.hpp"
 
 #include <Windows.h>
+// #include <iostream>
 
 TrackpadManager::TrackpadManager() : buffer()
 {
@@ -14,11 +15,8 @@ TrackpadManager::~TrackpadManager()
 
 void TrackpadManager::process()
 {
-	if (buffer.size() <= 0)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	}
-	else
+	std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+	if( buffer.size() > 0 )
 	{
 		DATA_PACK data;
 		lock.lock();
@@ -37,7 +35,6 @@ void TrackpadManager::process()
 			if (!dragging)
 			{
 				dragStart();
-				dragging = true;
 			}
 			move(data.velX, data.velY);
 			break;
@@ -50,12 +47,6 @@ void TrackpadManager::process()
 		case DATA_TYPE::DATA_TYPE_SCROLL_VERT:
 			scrollVertical(data.velY);
 			break;
-		}
-		if (dragging)
-		{
-			if(((DATA_TYPE)data.type != DATA_TYPE::DATA_TYPE_DRAG) && 
-				((DATA_TYPE)data.type != DATA_TYPE::DATA_TYPE_MOVE))
-				dragging = false;
 		}
 	}
 }
@@ -97,7 +88,6 @@ void TrackpadManager::mouseRightClick()
 	ip[1].type = INPUT_MOUSE;
 	ip[1].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
 	SendInput(2, ip, sizeof(INPUT));
-	// std::cout << "mouseRightClick" << std::endl;
 }
 
 void TrackpadManager::scrollHorizontal(float delta)
@@ -106,7 +96,7 @@ void TrackpadManager::scrollHorizontal(float delta)
 	INPUT ip = { 0 };
 	ip.type = INPUT_MOUSE;
 	ip.mi.dwFlags = MOUSEEVENTF_HWHEEL;
-	ip.mi.mouseData = (DWORD)(sign * WHEEL_DELTA);
+	ip.mi.mouseData = sign * static_cast<DWORD>(WHEEL_DELTA * sensitivity);
 	SendInput(1, &ip, sizeof(INPUT));
 }
 
@@ -116,7 +106,7 @@ void TrackpadManager::scrollVertical(float delta)
 	INPUT ip = { 0 };
 	ip.type = INPUT_MOUSE;
 	ip.mi.dwFlags = MOUSEEVENTF_WHEEL;
-	ip.mi.mouseData = (DWORD)(sign * WHEEL_DELTA);
+	ip.mi.mouseData = sign * static_cast<DWORD>(WHEEL_DELTA * sensitivity);
 	SendInput(1, &ip, sizeof(INPUT));
 }
 
@@ -124,8 +114,9 @@ void TrackpadManager::dragStart()
 {
 	INPUT ip = { 0 };
 	ip.type = INPUT_MOUSE;
-	ip.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_LEFTDOWN;
-	SendInput(2, &ip, sizeof(INPUT));
+	ip.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+	SendInput(1, &ip, sizeof(INPUT));
+	dragging = true;
 	// std::cout << "dragStart" << std::endl;
 }
 
@@ -135,6 +126,7 @@ void TrackpadManager::dragStop()
 	ip.type = INPUT_MOUSE;
 	ip.mi.dwFlags = MOUSEEVENTF_LEFTUP;
 	SendInput(1, &ip, sizeof(INPUT));
+	dragging = false;
 	// std::cout << "dragStop" << std::endl;
 }
 
