@@ -260,7 +260,7 @@ public class TrackpadActivity extends AppCompatActivity
                             // left click
                             // but wait for possible double click
                             performClick();
-                            postDelayed(delayedSingleClick, 100);
+                            postDelayed(delayedSingleClick, 110);
                         }
                         else if(touch_pointer_count == 2)
                         {
