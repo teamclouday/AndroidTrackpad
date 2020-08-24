@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity
     // define a helper class for managing data packages
     public static class BufferData
     {
-        public final int MAX_SIZE = 20;
+        public final int MAX_SIZE = 50;
         private ArrayList<BufferSingle> buff = new ArrayList<>();
 
         public synchronized void addData(DATA_TYPE type, float velX, float velY)

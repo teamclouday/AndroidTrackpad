@@ -11,9 +11,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.MotionEvent;
-import android.view.VelocityTracker;
 import android.view.View;
 
+import java.io.IOException;
 import java.util.HashSet;
 
 // reference: https://developer.android.com/training/gestures/movement
@@ -50,12 +50,12 @@ public class TrackpadActivity extends AppCompatActivity
             }
         }
 
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint paint_front = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint paint_back = new Paint(Paint.ANTI_ALIAS_FLAG);
         private Rect screen_size = new Rect(0,0,0,0);
         private HashSet<SingleCircle> myCircles = new HashSet<>(MAX_POINTERS);
         private SparseArray<SingleCircle> myCirclePointers = new SparseArray<>(MAX_POINTERS);
-
-        private VelocityTracker myVelocityTracker = null;
+        private long event_timer = -1;
 
         // set variables to identify gestures
         private long touch_timer = 0; // set timer for click
@@ -63,11 +63,26 @@ public class TrackpadActivity extends AppCompatActivity
         private boolean touch_pointer_click = true; // click or move
         private boolean touch_double_clicked = false; // for drag event
 
+        Runnable delayedSingleClick = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if(!touch_double_clicked)
+                {
+                    MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_CLICK_LEFT, 0, 0));
+                    Log.d(logTag, "onTouchEvent: left click");
+                }
+            }
+        };
+
         public TouchScreenView(Context context)
         {
             super(context);
-            paint.setColor(Color.argb(255, 225, 71, 252));
-            paint.setStyle(Paint.Style.FILL);
+            paint_front.setColor(Color.argb(255, 225, 71, 252));
+            paint_front.setStyle(Paint.Style.FILL);
+            paint_back.setColor(Color.argb(150, 225, 71, 252));
+            paint_back.setStyle(Paint.Style.FILL);
         }
 
         @Override
@@ -76,7 +91,8 @@ public class TrackpadActivity extends AppCompatActivity
             canvas.drawColor(Color.WHITE);
             for(SingleCircle circle : myCircles)
             {
-                canvas.drawCircle(circle.centerX, circle.centerY, circle.radius, paint);
+                canvas.drawCircle(circle.centerX, circle.centerY, circle.radius * 2, paint_back);
+                canvas.drawCircle(circle.centerX, circle.centerY, circle.radius, paint_front);
             }
             postInvalidateOnAnimation();
         }
@@ -97,7 +113,7 @@ public class TrackpadActivity extends AppCompatActivity
             switch(action)
             {
                 case MotionEvent.ACTION_DOWN:
-                    Log.d(logTag, "onTouchEvent: down");
+                    // Log.d(logTag, "onTouchEvent: down");
 
                     // first finger down, clear previous pointers
                     myCirclePointers.clear();
@@ -109,21 +125,8 @@ public class TrackpadActivity extends AppCompatActivity
                     myCirclePointers.put(event.getPointerId(index), newCircle);
                     invalidate();
 
-                    // init velocity tracker
-                    if(myVelocityTracker == null)
-                    {
-                        // retrieve a new VelocityTracker
-                        myVelocityTracker = VelocityTracker.obtain();
-                    }
-                    else
-                    {
-                        // reset velocity tracker
-                        myVelocityTracker.clear();
-                    }
-                    myVelocityTracker.addMovement(event);
-
                     // update gesture information
-                    if((touch_timer != 0) && (System.currentTimeMillis() - touch_timer <= 50))
+                    if((touch_timer != 0) && (System.currentTimeMillis() - touch_timer <= 100))
                         touch_double_clicked = true;
                     touch_timer = System.currentTimeMillis();
                     touch_pointer_count += 1;
@@ -131,7 +134,7 @@ public class TrackpadActivity extends AppCompatActivity
                     handled = true;
                     break;
                 case MotionEvent.ACTION_POINTER_DOWN:
-                    Log.d(logTag, "onTouchEvent: pointer down");
+                    // Log.d(logTag, "onTouchEvent: pointer down");
 
                     // this case, it will be secondary pointers
                     if(event.getPointerCount() > MAX_POINTERS)
@@ -151,7 +154,11 @@ public class TrackpadActivity extends AppCompatActivity
                     handled = true;
                     break;
                 case MotionEvent.ACTION_MOVE:
-                    Log.d(logTag, "onTouchEvent: move");
+                    // Log.d(logTag, "onTouchEvent: move");
+
+                    float deltaX = 0;
+                    float deltaY = 0;
+                    boolean deltaSettled = false;
 
                     // update position for each pointer
                     int count = event.getPointerCount();
@@ -163,37 +170,37 @@ public class TrackpadActivity extends AppCompatActivity
                         newCircle = myCirclePointers.get(pointerID);
                         if(newCircle != null)
                         {
+                            // only record the first moving finger
+                            if(!deltaSettled)
+                            {
+                                deltaX = posX - newCircle.centerX;
+                                deltaY = posY - newCircle.centerY;
+                                deltaSettled = true;
+                            }
                             newCircle.centerX = posX;
                             newCircle.centerY = posY;
                         }
                     }
                     invalidate();
 
-                    // update velocity tracker
-                    myVelocityTracker.addMovement(event);
-                    myVelocityTracker.computeCurrentVelocity(8);
-                    pointerID = event.getPointerId(0); // only use the velocity of the first finger
-                    float velX = myVelocityTracker.getXVelocity(pointerID);
-                    float velY = myVelocityTracker.getYVelocity(pointerID);
-                    Log.d(logTag, "onTouchEvent: (" + velX + "," + velY + ")");
-
                     // update gesture information
-                    if((Math.abs(velX) > 1.0f) || (Math.abs(velY) > 1.0f) || !touch_pointer_click)
+                    if(deltaSettled)
                     {
-                        touch_pointer_click = false;
+                        if((Math.abs(deltaX) > 5.0f || Math.abs(deltaY) > 5.0f))
+                            touch_pointer_click = false;
                         if(touch_pointer_count > 1)
                         {
                             // scroll event
-                            if(Math.abs(velX) >= Math.abs(velY))
+                            if(Math.abs(deltaX) >= Math.abs(deltaY))
                             {
                                 // horizontal scroll
-                                MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_SCROLL_HORI, velX, 0));
+                                MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_SCROLL_HORI, deltaX, 0));
                                 Log.d(logTag, "onTouchEvent: scroll horizontal");
                             }
                             else
                             {
                                 // vertical scroll
-                                MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_SCROLL_VERT, 0, velY));
+                                MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_SCROLL_VERT, 0, deltaY));
                                 Log.d(logTag, "onTouchEvent: scroll vertical");
                             }
                         }
@@ -202,13 +209,13 @@ public class TrackpadActivity extends AppCompatActivity
                             if(touch_double_clicked)
                             {
                                 // drag event
-                                MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_DRAG, velX, velY));
+                                MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_DRAG, deltaX, deltaY));
                                 Log.d(logTag, "onTouchEvent: drag");
                             }
                             else
                             {
                                 // move event
-                                MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_MOVE, velX, velY));
+                                MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_MOVE, deltaX, deltaY));
                                 Log.d(logTag, "onTouchEvent: move");
                             }
                         }
@@ -217,7 +224,7 @@ public class TrackpadActivity extends AppCompatActivity
                     handled = true;
                     break;
                 case MotionEvent.ACTION_POINTER_UP:
-                    Log.d(logTag, "onTouchEvent: pointer up");
+                    // Log.d(logTag, "onTouchEvent: pointer up");
 
                     // remove pointer when secondary finger is up
                     pointerID = event.getPointerId(index);
@@ -234,7 +241,7 @@ public class TrackpadActivity extends AppCompatActivity
                     handled = true;
                     break;
                 case MotionEvent.ACTION_UP:
-                    Log.d(logTag, "onTouchEvent: up");
+                    // Log.d(logTag, "onTouchEvent: up");
 
                     // clear circle pointers when all fingers are up
                     myCirclePointers.clear();
@@ -247,8 +254,8 @@ public class TrackpadActivity extends AppCompatActivity
                         if(touch_pointer_count == 1)
                         {
                             // left click
-                            MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_CLICK_LEFT, 0, 0));
-                            Log.d(logTag, "onTouchEvent: left click");
+                            // but wait for possible double click
+                            postDelayed(delayedSingleClick, 110);
                         }
                         else if(touch_pointer_count == 2)
                         {
@@ -262,15 +269,17 @@ public class TrackpadActivity extends AppCompatActivity
                     touch_timer = System.currentTimeMillis();
                     touch_pointer_count = 0;
                     touch_pointer_click = true;
-                    touch_double_clicked = false;
+                    if(touch_double_clicked)
+                    {
+                        // send a simple click event to disable dragging
+                        MainActivity.addData(new MainActivity.BufferSingle(MainActivity.DATA_TYPE.DATA_TYPE_CLICK_LEFT, 0, 0));
+                        touch_double_clicked = false;
+                    }
 
                     handled = true;
                     break;
                 case MotionEvent.ACTION_CANCEL:
-                    Log.d(logTag, "onTouchEvent: cancel");
-
-                    // release velocity tracker
-                    myVelocityTracker.recycle();
+                    // Log.d(logTag, "onTouchEvent: cancel");
 
                     // reset gesture information
                     touch_timer = System.currentTimeMillis();
