@@ -77,14 +77,13 @@ public:
 private:
 	void mouseLeftClick();
 	void mouseRightClick();
-	void scrollHorizontal(float speed);
-	void scrollVertical(float speed);
+	void scrollHorizontal(float delta);
+	void scrollVertical(float delta);
 	void dragStart();
-	void dragStop();
-	void move(float speedX, float speedY);
+	void move(float deltaX, float deltaY);
 
 public:
-	float sensitivity = 10.0f;
+	float sensitivity = 1.0f;
 	std::mutex lock;
 private:
 	const int DATA_PACK_MAX = 32;

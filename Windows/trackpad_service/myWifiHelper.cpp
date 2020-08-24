@@ -177,8 +177,10 @@ void WifiManager::stop()
 	GLOB_LOCK.lock();
 	GLOB_CONNECTED = false;
 	GLOB_LOCK.unlock();
-	if (myClientSocket != INVALID_SOCKET)
-		shutdown(myClientSocket, SD_SEND);
+	lock_UI.lock();
+	if (myUIManager)
+		myUIManager->pushMessage("Stopping Wifi service\nIf wait a long time, try to disconnect from Android phone first");
+	lock_UI.unlock();
 	// wait for the process thread
 	if (processThread.joinable())
 		processThread.join();
@@ -195,7 +197,6 @@ void WifiManager::process()
 	int result = 0;
 	do
 	{
-		if (GLOB_PROGRAM_EXIT) break;
 		if (connection_should_stop)
 		{
 			connection_should_stop = false; // reset to default value and quit
@@ -265,11 +266,7 @@ void WifiManager::process()
 			lock_UI.unlock();
 			break;
 		}
-		else
-		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		}
-	} while (true);
+	} while (!GLOB_PROGRAM_EXIT);
 }
 
 bool WifiManager::validate()

@@ -136,7 +136,7 @@ void UIManager::draw_UI()
 	if (myTrackManager)
 	{
 		ImGui::SetNextItemWidth(120.0f);
-		ImGui::SliderFloat("Mouse Sensitivity", &myTrackManager->sensitivity, 0.01f, 20.0f, "%.2f", 1.0f);
+		ImGui::SliderFloat("Mouse Sensitivity", &myTrackManager->sensitivity, 0.01f, 2.0f, "%.2f", 1.0f);
 	}
 	lock_Track.unlock();
 	ImGui::PopStyleColor();
@@ -225,6 +225,7 @@ void UIManager::draw_UI()
 
 void UIManager::pushMessage(std::string message)
 {
+	if (GLOB_PROGRAM_EXIT) return;
 	myConnectInfo.push_back(message);
 	while (myConnectInfo.size() > connect_info_max_len)
 	{
@@ -234,6 +235,7 @@ void UIManager::pushMessage(std::string message)
 
 void UIManager::popMessage()
 {
+	if (GLOB_PROGRAM_EXIT) return;
 	if (myConnectInfo.size() > 0)
 	{
 		myConnectInfo.pop_back();
