@@ -28,7 +28,7 @@ void TransferManager::processRequest()
 	// if no request, sleep for 50 milliseconds
 	if (!(start_requested || stop_requested))
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		return;
 	}
 	// if type is bluetooth

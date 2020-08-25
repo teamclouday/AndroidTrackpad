@@ -1,5 +1,6 @@
 #include "myUI.hpp"
 #include "myTransfer.hpp"
+#include "myTrackpadHelper.hpp"
 
 #include <imgui_internal.h>
 
@@ -13,8 +14,11 @@
 extern std::mutex GLOB_LOCK;
 extern bool GLOB_PROGRAM_EXIT;
 extern bool GLOB_CONNECTED;
+
 extern TransferManager* myTranManager;
 extern std::mutex lock_Transfer;
+extern TrackpadManager* myTrackManager;
+extern std::mutex lock_Track;
 
 UIManager::UIManager() : myConnectInfo()
 {
@@ -128,6 +132,13 @@ void UIManager::draw_UI()
 		}
 	}
 	lock_Transfer.unlock();
+	lock_Track.lock();
+	if (myTrackManager)
+	{
+		ImGui::SetNextItemWidth(120.0f);
+		ImGui::SliderFloat("Mouse Sensitivity", &myTrackManager->sensitivity, 0.01f, 2.0f, "%.2f", 1.0f);
+	}
+	lock_Track.unlock();
 	ImGui::PopStyleColor();
 
 	ImGui::PopStyleColor();
@@ -214,6 +225,7 @@ void UIManager::draw_UI()
 
 void UIManager::pushMessage(std::string message)
 {
+	if (GLOB_PROGRAM_EXIT) return;
 	myConnectInfo.push_back(message);
 	while (myConnectInfo.size() > connect_info_max_len)
 	{
@@ -223,6 +235,7 @@ void UIManager::pushMessage(std::string message)
 
 void UIManager::popMessage()
 {
+	if (GLOB_PROGRAM_EXIT) return;
 	if (myConnectInfo.size() > 0)
 	{
 		myConnectInfo.pop_back();

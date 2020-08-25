@@ -4,6 +4,9 @@ UIManager* myUIManager;
 std::mutex lock_UI;
 TransferManager* myTranManager;
 std::mutex lock_Transfer;
+TrackpadManager* myTrackManager;
+std::mutex lock_Track;
+
 bool GLOB_PROGRAM_EXIT;
 bool GLOB_CONNECTED;
 std::mutex GLOB_LOCK;
@@ -15,6 +18,7 @@ int main(int, char**)
 
 	myUIManager = nullptr;
 	myTranManager = nullptr;
+	myTrackManager = nullptr;
 
 	std::thread thread_UI(task_UI);
 	std::thread thread_Transfer(task_Transfer);
@@ -57,5 +61,8 @@ void task_Transfer()
 
 void task_Trackpad()
 {
-
+	myTrackManager = new TrackpadManager();
+	while (!GLOB_PROGRAM_EXIT)
+		myTrackManager->process();
+	delete myTrackManager;
 }
