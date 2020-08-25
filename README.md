@@ -4,6 +4,17 @@ Connect your Android phone to Windows or Linux system as a trackpad
 
 ------
 
+### How to use  
+Install PC side based on your system, install apk on your Android phone  
+For bluetooth mode, please pair phone with your PC in advance  
+For Wifi mode, please start a hotspot on PC and connect your phone with it (Or if your router support port forwarding, this program may also work for PC and Android in same network. The port is ```10086```)  
+
+#### Note
+There are some issues with exiting the program (See Windows README.md for detail)  
+All are solvable by disconnecting from Android side first  
+
+------
+
 ### Features  
 1. Connect via Wifi, or Bluetooth (Configuration done on both sides)  
 2. Four basic actions:  
