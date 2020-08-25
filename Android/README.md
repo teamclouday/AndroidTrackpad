@@ -8,12 +8,10 @@
   In bluetooth mode, the application will search in paired devices for target PC  
   Assumed that a bluetooth server service has been running on target PC  
   It will try to connect to the server, and prepare for communication  
-* Wifi (P2P)  
-  In P2P mode, the application will start a discovery of peer devices  
-  It will filter only PC devices, and tries to connect  
-  Assumed that a P2P service has been running on target PC  
-  Will try to exchange a unique ID before actual communication  
-  In this mode, android device is assumed to have connected to target deivce's Mobile hotspot
+* Wifi (Direct)  
+  In Wifi mode, the application will ask for input of PC's IP address (which is shown on PC side)  
+  Assumed that a TCP server is running on PC. It will try to connect the target PC directly  
+  Before real connection, android side will send a pre-coded validation code to PC, so that PC knows it is the right device  
 
 ------
 
@@ -24,3 +22,4 @@
 * One finger move = Move cursor  
 * Two finger move = Scroll (Up, Down, Left, Right)  
 * Multiple finger move = Not supported (will use first identified finger as one finger move)  
+* Double tap then move = Drag  
