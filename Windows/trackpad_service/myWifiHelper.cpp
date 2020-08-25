@@ -103,7 +103,7 @@ void WifiManager::start()
 		myUIManager->pushMessage("Wifi service starting (60s timeout)\nPlease wait\nYour Local IP = " + localIP);
 	lock_UI.unlock();
 	// start listening
-	if (SOCKET_ERROR == listen(myLocalSocket, SOMAXCONN))
+	if (SOCKET_ERROR == listen(myLocalSocket, 1))
 	{
 		lock_UI.lock();
 		if (myUIManager)
