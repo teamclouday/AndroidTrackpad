@@ -6,6 +6,7 @@
 
 * Bluetooth  
   In bluetooth mode, the application will search in paired devices for target PC  
+  In addition, it will find server with a pre-defined UUID  
   Assumed that a bluetooth server service has been running on target PC  
   It will try to connect to the server, and prepare for communication  
 * Wifi (Direct)  
