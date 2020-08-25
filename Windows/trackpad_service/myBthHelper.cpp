@@ -137,7 +137,13 @@ void BthManager::start()
 			GLOB_LOCK.unlock();
 			// get device basic information
 			char message[100];
-			sprintf_s(message, "Device address = %04x%08x", GET_NAP(myClientSocketAddr.btAddr), GET_SAP(myClientSocketAddr.btAddr));
+			sprintf_s(message, "Device address = %02x:%02x:%02x:%02x:%02x:%02x",
+				static_cast<unsigned char>((myClientSocketAddr.btAddr >> 40) & 0xFF),
+				static_cast<unsigned char>((myClientSocketAddr.btAddr >> 32) & 0xFF),
+				static_cast<unsigned char>((myClientSocketAddr.btAddr >> 24) & 0xFF), 
+				static_cast<unsigned char>((myClientSocketAddr.btAddr >> 16) & 0xFF), 
+				static_cast<unsigned char>((myClientSocketAddr.btAddr >> 8) & 0xFF), 
+				static_cast<unsigned char>(myClientSocketAddr.btAddr & 0xFF));
 			lock_UI.lock();
 			if (myUIManager)
 				myUIManager->pushMessage("Bluetooth Connected\n" + std::string(message));
