@@ -62,7 +62,7 @@ void BthManager::initialize()
 	initialized = true;
 }
 
-void BthManager::register_sdp()
+bool BthManager::register_sdp()
 {
 	if(myServiceSession)
 	{
@@ -116,9 +116,9 @@ void BthManager::register_sdp()
     	sdp_list_free(root_list, 0);
     	sdp_list_free(access_proto_list, 0);
 		sdp_record_free(record);
-		return;
+		return false;
 	}
-    if(sdp_record_register(myServiceSession, record, 0))
+    if(!sdp_record_register(myServiceSession, record, 0))
 	{
 		UIManager::showLinuxMessageError("Failed to register local sdp record for bluetooth");
 		sdp_data_free(channel);
@@ -132,7 +132,7 @@ void BthManager::register_sdp()
 			sdp_close(myServiceSession);
 			myServiceSession = nullptr;
 		}
-		return;
+		return false;
 	}
     // cleanup
     sdp_data_free(channel);
@@ -141,12 +141,13 @@ void BthManager::register_sdp()
     sdp_list_free(root_list, 0);
     sdp_list_free(access_proto_list, 0);
 	sdp_record_free(record);
+	return true;
 }
 
 void BthManager::start()
 {
-	register_sdp();
-	if (!initialized) return;
+	if(!register_sdp()) return;
+	if(!initialized) return;
 	lock_UI.lock();
 	if (myUIManager)
 		myUIManager->pushMessage("Bluetooth service starting (30s timeout)\nPlease wait");
