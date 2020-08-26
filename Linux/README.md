@@ -6,8 +6,11 @@
 * SDL2 (Assume installed on system)  
 * ImGui  
 * OpenGL3 (Assume GLEW is installed on system)  
-* Bluetooth dev lib (Assume something like libbluetooth-dev or bluez is installed)  
+* bluez5  
 * X11 (Make sure your linux backend is using X11 and something like libx11-dev is installed)  
+* GLIB 2.0 (Make sure glib-2.0 is installed)  
+* libnotify  
+* PkgConfig (Tool for cmake use)  
 
 ### How to build  
 First download ImGui package and prepare put it in ```external/imgui``` in this folder  

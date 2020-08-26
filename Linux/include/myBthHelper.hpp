@@ -11,6 +11,7 @@
 
 // reference1: https://people.csail.mit.edu/albert/bluez-intro/x502.html
 // reference2: https://people.csail.mit.edu/albert/bluez-intro/x604.html
+// reference3: https://github.com/tonyespy/bluez5-spp-example/blob/master/btspp.c
 
 #define BLUETOOTH_BUFFER_SIZE 512
 
@@ -37,10 +38,12 @@ public:
 	bool initialized = false;
 	bool connection_should_stop = false; // set to true if stop button clicked, in order to stop process thread
 private:
-	const unsigned char MY_UUID[16] = {
-		0x97, 0xc4, 0xea, 0xb8, 0x23, 0x4b, 0x42, 0xd0,
-		0x8c, 0x09, 0xe9, 0xa5, 0xb1, 0xf1, 0xba, 0x5b,
-	}; // connection unique ID
+	// const uint8_t MY_UUID[16] = {
+	// 	0x97, 0xc4, 0xea, 0xb8, 0x23, 0x4b, 0x42, 0xd0,
+	// 	0x8c, 0x09, 0xe9, 0xa5, 0xb1, 0xf1, 0xba, 0x5b,
+	// }; 
+	// const char* MY_UUID = "97c4eab8-234b-42d0-8c09-e9a5b1f1ba5b";// connection unique ID
+	const uint32_t MY_UUID[4] = {0x97c4eab8, 0x234b42d0, 0x8c09e9a5, 0xb1f1ba5b};
 	const uint8_t MY_CHANNEL = 11;
 	const char* MY_SERVICE_NAME = "Android Trackpad (Linux Service)"; // set service name
 	const char* MY_SERVICE_DESC = "Linux side bluetooth service for Android Trackpad project"; // set service description

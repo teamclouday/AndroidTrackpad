@@ -15,8 +15,8 @@ extern bool GLOB_CONNECTED;
 extern bool GLOB_PROGRAM_EXIT;
 extern std::mutex GLOB_LOCK;
 
-static const bdaddr_t bt_bdaddr_any   = {{0, 0, 0, 0, 0, 0}};
-static const bdaddr_t bt_bdaddr_local = {{0, 0, 0, 0xff, 0xff, 0xff}};
+static const bdaddr_t bt_bdaddr_any   = {0, 0, 0, 0, 0, 0};
+static const bdaddr_t bt_bdaddr_local = {0, 0, 0, 0xff, 0xff, 0xff};
 
 BthManager::BthManager()
 {
@@ -28,45 +28,31 @@ BthManager::~BthManager()
 	stop();
 	close(myLocalSocket);
 	if(myServiceSession)
-	{
 		sdp_close(myServiceSession);
-		myServiceSession = nullptr;
-	}
 }
 
 void BthManager::initialize()
-{
+{	
 	// prepare sdp registration
-	uuid_t root_uuid, l2cap_uuid, rfcomm_uuid, svc_uuid, svc_class_uuid;
+	uuid_t root_uuid, l2cap_uuid, rfcomm_uuid, svc_uuid;
     sdp_list_t *l2cap_list = 0, 
                *rfcomm_list = 0,
                *root_list = 0,
                *proto_list = 0, 
-               *access_proto_list = 0,
-			   *svc_class_list = 0,
-			   *profile_list = 0;
+               *access_proto_list = 0;
     sdp_data_t *channel = 0;
-	sdp_profile_desc_t profile;
-    sdp_record_t record;
-	memset(&record, 0, sizeof(sdp_record_t));
+    sdp_record_t* record = sdp_record_alloc();
 	bdaddr_t bt_bdaddr_any   = {0, 0, 0, 0, 0, 0};
 	bdaddr_t bt_bdaddr_local = {0, 0, 0, 0xff, 0xff, 0xff};
-    // set the general service ID
+    // set the general service ID	
     sdp_uuid128_create(&svc_uuid, &MY_UUID);
-    sdp_set_service_id(&record, svc_uuid);
-	// set service class
-	sdp_uuid16_create(&svc_class_uuid, SERIAL_PORT_SVCLASS_ID);
-	svc_class_list = sdp_list_append(0, &svc_class_uuid);
-	sdp_set_service_classes(&record, svc_class_list);
-	// set bluetooth profile information
-	sdp_uuid16_create(&profile.uuid, SERIAL_PORT_PROFILE_ID);
-	profile.version = 0x0100;
-	profile_list = sdp_list_append(0, &profile);
-	sdp_set_profile_descs(&record, profile_list);
+    sdp_set_service_id(record, svc_uuid);
+  	sdp_list_t service_class = {NULL, &svc_uuid};
+  	sdp_set_service_classes(record, &service_class);
     // make the service record publicly browsable
     sdp_uuid16_create(&root_uuid, PUBLIC_BROWSE_GROUP);
     root_list = sdp_list_append(0, &root_uuid);
-    sdp_set_browse_groups(&record, root_list);
+    sdp_set_browse_groups(record, root_list);
     // set l2cap information
     sdp_uuid16_create(&l2cap_uuid, L2CAP_UUID);
     l2cap_list = sdp_list_append(0, &l2cap_uuid);
@@ -79,9 +65,9 @@ void BthManager::initialize()
     sdp_list_append(proto_list, rfcomm_list);
     // attach protocol information to service record
     access_proto_list = sdp_list_append(0, proto_list);
-    sdp_set_access_protos(&record, access_proto_list);
+    sdp_set_access_protos(record, access_proto_list);
     // set the name, provider, and description
-    sdp_set_info_attr(&record, MY_SERVICE_NAME, MY_SERVICE_PROV, MY_SERVICE_DESC);
+    sdp_set_info_attr(record, MY_SERVICE_NAME, MY_SERVICE_PROV, MY_SERVICE_DESC);
     // connect to the local SDP server, register the service record, and 
     // disconnect
     myServiceSession = sdp_connect(&bt_bdaddr_any, &bt_bdaddr_local, SDP_RETRY_IF_BUSY);
@@ -93,11 +79,10 @@ void BthManager::initialize()
     	sdp_list_free(rfcomm_list, 0);
     	sdp_list_free(root_list, 0);
     	sdp_list_free(access_proto_list, 0);
-		sdp_list_free(svc_class_list, 0);
-		sdp_list_free(profile_list, 0);
+		sdp_record_free(record);
 		return;
 	}
-    if(!sdp_record_register(myServiceSession, &record, 0))
+    if(!sdp_record_register(myServiceSession, record, 0))
 	{
 		UIManager::showLinuxMessageError("Failed to register local sdp record for bluetooth");
 		sdp_data_free(channel);
@@ -105,8 +90,7 @@ void BthManager::initialize()
     	sdp_list_free(rfcomm_list, 0);
     	sdp_list_free(root_list, 0);
     	sdp_list_free(access_proto_list, 0);
-		sdp_list_free(svc_class_list, 0);
-		sdp_list_free(profile_list, 0);
+		sdp_record_free(record);
 		if(myServiceSession)
 		{
 			sdp_close(myServiceSession);
@@ -120,8 +104,7 @@ void BthManager::initialize()
     sdp_list_free(rfcomm_list, 0);
     sdp_list_free(root_list, 0);
     sdp_list_free(access_proto_list, 0);
-	sdp_list_free(svc_class_list, 0);
-	sdp_list_free(profile_list, 0);
+	sdp_record_free(record);
 	// open a bluetooth socket using RFCOMM protocol
 	myLocalSocket = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
 	if (INVALID_SOCKET == myLocalSocket)

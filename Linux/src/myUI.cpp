@@ -4,6 +4,8 @@
 
 #include <imgui_internal.h>
 
+#include <libnotify/notify.h>
+
 #include <chrono>
 #include <thread>
 #include <mutex>
@@ -322,11 +324,15 @@ void UIManager::quit_imgui()
 	ImGui::DestroyContext();
 }
 
-
-
 void UIManager::showLinuxMessageError(const std::string message)
 {
 	// This function is only used for displaying error message that would cause the program terminate
-	if(SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Android Trackpad Service Error", message.c_str(), NULL))
-		std::cerr << "SDL_ShowSimpleMessageBox error: " << SDL_GetError() << std::endl;
+	// if(SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Android Trackpad Service Error", message.c_str(), NULL))
+	// 	std::cerr << "SDL_ShowSimpleMessageBox error: " << SDL_GetError() << std::endl;
+	NotifyNotification* notif;
+	notify_init("Android Trackpad Service");
+	notif = notify_notification_new("Android Trackpad Service Error", message.c_str(), NULL);
+	notify_notification_set_timeout(notif, 5000);
+	notify_notification_set_urgency(notif, NOTIFY_URGENCY_CRITICAL);
+	notify_notification_show(notif, 0);
 }
