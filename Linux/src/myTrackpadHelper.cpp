@@ -1,20 +1,28 @@
 #include "myTrackpadHelper.hpp"
 #include "myUI.hpp"
 
-#include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/XTest.h>
 
 #include <thread>
 #include <iostream>
 
 TrackpadManager::TrackpadManager() : buffer()
 {
-
+	root_display = XOpenDisplay(NULL);
+	if(!root_display)
+	{
+		UIManager::showLinuxMessageError("Failed to get X11 root display");
+		return;
+	}
+	initialized = true;
 }
 
 TrackpadManager::~TrackpadManager()
 {
 	buffer.clear();
+	if(root_display)
+		XCloseDisplay(root_display);
 }
 
 void TrackpadManager::process()
@@ -74,102 +82,60 @@ void TrackpadManager::mouseLeftClick(float flag)
 	else
 	{
 		// if 0, perform normal left click
-		Display *display = XOpenDisplay(NULL);
-    	if(display == NULL)
-    	{
-    	    fprintf(stderr, "Errore nell'apertura del Display !!!\n");
-    	    exit(EXIT_FAILURE);
-    	}
-    	XEvent event;
-		memset(&event, 0, sizeof(XEvent));
-    	event.type = ButtonPress;
-    	event.xbutton.button = Button1;
-    	event.xbutton.same_screen = True;
-    	XQueryPointer(display, RootWindow(display, DefaultScreen(display)), &event.xbutton.root, &event.xbutton.window, &event.xbutton.x_root, &event.xbutton.y_root, &event.xbutton.x, &event.xbutton.y, &event.xbutton.state);
-		event.xbutton.subwindow = event.xbutton.window;
-    	while(event.xbutton.subwindow)
-    	{
-    	    event.xbutton.window = event.xbutton.subwindow;
-    	    XQueryPointer(display, event.xbutton.window, &event.xbutton.root, &event.xbutton.subwindow, &event.xbutton.x_root, &event.xbutton.y_root, &event.xbutton.x, &event.xbutton.y, &event.xbutton.state);
-    	}
-		if(!XSendEvent(display, PointerWindow, True, 0xfff, &event))
-			std::cerr << "Error" << std::endl;
-		XFlush(display);
-		event.type = ButtonRelease;
-    	event.xbutton.state = 0x100;
-		if(!XSendEvent(display, PointerWindow, True, 0xfff, &event))
-			std::cerr << "Error" << std::endl;
-		XFlush(display);
-		XCloseDisplay(display);
-		// std::cout << "mouseLeftClick" << std::endl;
+		XTestFakeButtonEvent(root_display, Button1, True, 0);
+		XFlush(root_display);
+		std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+		XTestFakeButtonEvent(root_display, Button1, False, 0);
+		XFlush(root_display);
 	}
 }
 
 void TrackpadManager::mouseRightClick()
 {
-	// INPUT ip[2] = { 0 };
-	// ip[0].type = INPUT_MOUSE;
-	// ip[0].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-	// ip[1].type = INPUT_MOUSE;
-	// ip[1].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-	// SendInput(2, ip, sizeof(INPUT));
+	XTestFakeButtonEvent(root_display, Button3, True, 0);
+	XFlush(root_display);
+	std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+	XTestFakeButtonEvent(root_display, Button3, False, 0);
+	XFlush(root_display);
 }
 
 void TrackpadManager::scrollHorizontal(float delta)
 {
-	// int sign = (delta > 0) ? -1 : 1;
-	// INPUT ip = { 0 };
-	// ip.type = INPUT_MOUSE;
-	// ip.mi.dwFlags = MOUSEEVENTF_HWHEEL;
-	// ip.mi.mouseData = sign * static_cast<DWORD>(WHEEL_DELTA * sensitivity);
-	// SendInput(1, &ip, sizeof(INPUT));
+	int button = (delta > 0) ? Button6 : Button7;
+	XTestFakeButtonEvent(root_display, button, True, 0);
+	XFlush(root_display);
+	std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+	XTestFakeButtonEvent(root_display, button, False, 0);
+	XFlush(root_display);
 }
 
 void TrackpadManager::scrollVertical(float delta)
 {
-	// int sign = (delta > 0) ? 1 : -1;
-	// INPUT ip = { 0 };
-	// ip.type = INPUT_MOUSE;
-	// ip.mi.dwFlags = MOUSEEVENTF_WHEEL;
-	// ip.mi.mouseData = sign * static_cast<DWORD>(WHEEL_DELTA * sensitivity);
-	// SendInput(1, &ip, sizeof(INPUT));
+	int button = (delta > 0) ? Button4 : Button5;
+	XTestFakeButtonEvent(root_display, button, True, 0);
+	XFlush(root_display);
+	std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+	XTestFakeButtonEvent(root_display, button, False, 0);
+	XFlush(root_display);
 }
 
 void TrackpadManager::dragStart()
 {
-	// INPUT ip = { 0 };
-	// ip.type = INPUT_MOUSE;
-	// ip.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-	// SendInput(1, &ip, sizeof(INPUT));
-	// dragging = true;
-	// std::cout << "dragStart" << std::endl;
+	XTestFakeButtonEvent(root_display, Button1, True, 0);
+	XFlush(root_display);
 }
 
 void TrackpadManager::dragStop()
 {
-	// INPUT ip = { 0 };
-	// ip.type = INPUT_MOUSE;
-	// ip.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-	// SendInput(1, &ip, sizeof(INPUT));
-	// dragging = false;
-	// std::cout << "dragStop" << std::endl;
+	XTestFakeButtonEvent(root_display, Button1, False, 0);
+	XFlush(root_display);
 }
 
 void TrackpadManager::move(float deltaX, float deltaY)
 {
-	// INPUT ip = { 0 };
-	// ip.type = INPUT_MOUSE;
-	// if (dragging)
-	// {
-	// 	ip.mi.dwFlags = MOUSEEVENTF_MOVE;
-	// 	// std::cout << "drag" << std::endl;
-	// }
-	// else
-	// {
-	// 	ip.mi.dwFlags = MOUSEEVENTF_MOVE;
-	// 	// std::cout << "move" << std::endl;
-	// }
-	// ip.mi.dx = deltaX * sensitivity;
-	// ip.mi.dy = deltaY * sensitivity;
-	// SendInput(1, &ip, sizeof(INPUT));
+	deltaX *= sensitivity;
+	deltaY *= sensitivity;
+	Window root = DefaultRootWindow(root_display);
+	XWarpPointer(root_display, root, None, 0, 0, 0, 0, static_cast<int>(deltaX), static_cast<int>(deltaY));
+	XFlush(root_display);
 }

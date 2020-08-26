@@ -8,7 +8,7 @@
 * OpenGL3 (Assume GLEW is installed on system)  
 * bluez5  
 * X11 (Make sure your linux backend is using X11 and something like libx11-dev is installed)  
-* GLIB 2.0 (Make sure glib-2.0 is installed)  
+* XTest (Make sure something like libxtst-dev is installed)  
 * libnotify  
 * PkgConfig (Tool for cmake use)  
 
@@ -29,6 +29,17 @@ Or (Debug build):
 mkdir build && cd build  
 cmake -DCMAKE_BUILD_TYPE=Debug ..
 make
+```
+
+The executables are stored in ```bin``` folder  
+
+------
+
+### Important Note  
+This program requires root privilege (for Bluetooth service registration in sdp)  
+
+```bash
+sudo ./TrackpadService
 ```
 
 ------

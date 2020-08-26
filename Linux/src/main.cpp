@@ -63,6 +63,10 @@ void task_Trackpad()
 {
 	myTrackManager = new TrackpadManager();
 	while (!GLOB_PROGRAM_EXIT)
+	{
+		if(!myTrackManager->initialized)
+			break;
 		myTrackManager->process();
+	}
 	delete myTrackManager;
 }

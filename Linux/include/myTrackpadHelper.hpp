@@ -1,5 +1,7 @@
 #pragma once
 
+#include <X11/Xlib.h>
+
 #include <cstring>
 #include <deque>
 #include <mutex>
@@ -8,6 +10,15 @@
 
 // define the data seperator
 #define DATA_VALIDATION_CODE 10086
+
+// define X11 horizontal buttons
+// if not available
+#ifndef Button6
+#define Button6 6
+#endif
+#ifndef Button7
+#define Button7 7
+#endif
 
 class TrackpadManager
 {
@@ -86,9 +97,12 @@ private:
 	void move(float deltaX, float deltaY);
 
 public:
+	bool initialized = false;
 	float sensitivity = 1.0f;
 	std::mutex lock;
 private:
+	const int SCROLL_AMOUNT = 120; // same as Windows
+	Display* root_display = nullptr;
 	const unsigned DATA_PACK_MAX = 32;
 	std::deque<DATA_PACK> buffer;
 	bool dragging = false; // inidicator for dragging
