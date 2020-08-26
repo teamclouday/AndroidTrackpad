@@ -20,7 +20,7 @@ static const bdaddr_t bt_bdaddr_local = {0, 0, 0, 0xff, 0xff, 0xff};
 
 BthManager::BthManager()
 {
-	initialize();
+	initialized = true;
 }
 
 BthManager::~BthManager()
@@ -31,14 +31,19 @@ BthManager::~BthManager()
 		sdp_close(myServiceSession);
 }
 
-void BthManager::initialize()
+bool BthManager::initialize()
 {
+	if(myLocalSocket != INVALID_SOCKET)
+		close(myLocalSocket);
 	// open a bluetooth socket using RFCOMM protocol
 	myLocalSocket = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
 	if (INVALID_SOCKET == myLocalSocket)
 	{
-		UIManager::showLinuxMessageError("Failed to open bluetooth socket");
-		return;
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage("Failed to open bluetooth socket");
+		lock_UI.unlock();
+		return false;
 	}
 	// define BDADDR_ANY and BDADDR_LOCAL
 	myLocalSocketAddr.rc_family = AF_BLUETOOTH;
@@ -47,19 +52,25 @@ void BthManager::initialize()
 	// bind socket
 	if (SOCKET_ERROR == bind(myLocalSocket, (struct sockaddr*)&myLocalSocketAddr, sizeof(struct sockaddr_rc)))
 	{
-		UIManager::showLinuxMessageError("Failed to bind bluetooth socket\nPlease check your bluetooth is turned on");
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage("Failed to bind bluetooth socket\nPlease check your bluetooth is turned on");
+		lock_UI.unlock();
 		close(myLocalSocket);
-		return;
+		return false;
 	}
 	// try to get socket name
 	socklen_t addrlen = sizeof(struct sockaddr_rc);
 	if (SOCKET_ERROR == getsockname(myLocalSocket, (struct sockaddr*)&myLocalSocketAddr, &addrlen))
 	{
-		UIManager::showLinuxMessageError("Failed to get bluetooth socket name\nInitialization failed");
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage("Failed to get bluetooth socket name\nInitialization failed");
+		lock_UI.unlock();
 		close(myLocalSocket);
-		return;
+		return false;
 	}
-	initialized = true;
+	return true;
 }
 
 bool BthManager::register_sdp()
@@ -109,7 +120,10 @@ bool BthManager::register_sdp()
     myServiceSession = sdp_connect(&bt_bdaddr_any, &bt_bdaddr_local, SDP_RETRY_IF_BUSY);
 	if(!myServiceSession)
 	{
-		UIManager::showLinuxMessageError("Failed to connect sdp record for bluetooth");
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage("Failed to connect sdp record for bluetooth");
+		lock_UI.unlock();
 		sdp_data_free(channel);
     	sdp_list_free(l2cap_list, 0);
     	sdp_list_free(rfcomm_list, 0);
@@ -118,9 +132,12 @@ bool BthManager::register_sdp()
 		sdp_record_free(record);
 		return false;
 	}
-    if(!sdp_record_register(myServiceSession, record, 0))
+    if(sdp_record_register(myServiceSession, record, 0))
 	{
-		UIManager::showLinuxMessageError("Failed to register local sdp record for bluetooth");
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage("Failed to register local sdp record for bluetooth");
+		lock_UI.unlock();
 		sdp_data_free(channel);
     	sdp_list_free(l2cap_list, 0);
     	sdp_list_free(rfcomm_list, 0);
@@ -146,6 +163,7 @@ bool BthManager::register_sdp()
 
 void BthManager::start()
 {
+	if(!initialize()) return;
 	if(!register_sdp()) return;
 	if(!initialized) return;
 	lock_UI.lock();

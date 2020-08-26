@@ -32,9 +32,9 @@ public:
 	void start();
 	void stop();
 private:
-	void initialize();
-	void process();
+	bool initialize();
 	bool register_sdp();
+	void process();
 public:
 	bool initialized = false;
 	bool connection_should_stop = false; // set to true if stop button clicked, in order to stop process thread
