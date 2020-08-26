@@ -20,7 +20,7 @@ extern std::mutex GLOB_LOCK;
 
 WifiManager::WifiManager()
 {
-	initialize();
+	initialized = true;
 }
 
 WifiManager::~WifiManager()
@@ -29,15 +29,20 @@ WifiManager::~WifiManager()
 	close(myLocalSocket);
 }
 
-void WifiManager::initialize()
+bool WifiManager::initialize()
 {
+	if(myLocalSocket != INVALID_SOCKET)
+		close(myLocalSocket);
 	// get adapter information
 	struct sockaddr_in testAddr;
 	int testSocket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (INVALID_SOCKET == testSocket)
 	{
-		UIManager::showLinuxMessageError("Failed to open Wifi socket for test");
-		return;
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage("Failed to open Wifi socket for test");
+		lock_UI.unlock();
+		return false;
 	}
 	memset(&testAddr, 0, sizeof(testAddr));
 	testAddr.sin_family = AF_INET;
@@ -45,17 +50,23 @@ void WifiManager::initialize()
 	testAddr.sin_port = htons(53);
 	if (SOCKET_ERROR == connect(testSocket, (struct sockaddr*)&testAddr, sizeof(testAddr)))
 	{
-		UIManager::showLinuxMessageError(std::string("Failed to connect to test dns server: ") + test_server);
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage(std::string("Failed to connect to test dns server: ") + test_server);
+		lock_UI.unlock();
 		close(testSocket);
-		return;
+		return false;
 	}
 	struct sockaddr_in result;
 	socklen_t len = sizeof(result);
 	if (SOCKET_ERROR == getsockname(testSocket, (struct sockaddr*)&result, &len))
 	{
-		UIManager::showLinuxMessageError("Failed to get Wifi test socket information");
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage("Failed to get Wifi test socket information");
+		lock_UI.unlock();
 		close(testSocket);
-		return;
+		return false;
 	}
 	close(testSocket);
 	// save current PC ip address information
@@ -71,23 +82,29 @@ void WifiManager::initialize()
 	myLocalSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (INVALID_SOCKET == myLocalSocket)
 	{
-		UIManager::showLinuxMessageError("Failed to open Wifi TCP socket");
-		return;
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage("Failed to open Wifi TCP socket");
+		lock_UI.unlock();
+		return false;
 	}
 	// bind local socket
 	if (SOCKET_ERROR == bind(myLocalSocket, (struct sockaddr*)&hint, len))
 	{
-		UIManager::showLinuxMessageError("Failed to bind Wifi TCP socket");
+		lock_UI.lock();
+		if (myUIManager)
+			myUIManager->pushMessage("Failed to bind Wifi TCP socket");
+		lock_UI.unlock();
 		close(myLocalSocket);
-		return;
+		return false;
 	}
 	
-	initialized = true;
+	return true;
 }
 
 void WifiManager::start()
 {
-	if (!initialized) return;
+	if (!initialize()) return;
 	lock_UI.lock();
 	if (myUIManager)
 		myUIManager->pushMessage("Wifi service starting (60s timeout)\nPlease wait\nYour Local IP = " + localIP);

@@ -27,7 +27,7 @@ public:
 	void start();
 	void stop();
 private:
-	void initialize();
+	bool initialize();
 	void process();
 	bool validate();
 public:
