@@ -18,7 +18,7 @@ public:
 	UIManager();
 	~UIManager();
 	void loop();
-	static void showWindowsMessageError(const std::string message);
+	static void showLinuxMessageError(const std::string message);
 	void pushMessage(std::string message);
 	void popMessage();
 private:

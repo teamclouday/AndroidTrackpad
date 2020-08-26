@@ -272,13 +272,13 @@ bool UIManager::initialize_sdl()
 		window_size_width, window_size_height, SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN);
 	if (!myWindow)
 	{
-		showWindowsMessageError(std::string("Error: SDL_CreateWindow failed\n") + SDL_GetError());
+		showLinuxMessageError(std::string("Error: SDL_CreateWindow failed\n") + SDL_GetError());
 		return false;
 	}
 	myGLContext = SDL_GL_CreateContext(myWindow);
 	if (!myGLContext)
 	{
-		showWindowsMessageError(std::string("Error: SDL_GL_CreateContext failed\n") + SDL_GetError());
+		showLinuxMessageError(std::string("Error: SDL_GL_CreateContext failed\n") + SDL_GetError());
 		return false;
 	}
 	SDL_GL_MakeCurrent(myWindow, myGLContext);
@@ -291,7 +291,7 @@ bool UIManager::initialize_glew()
 	// init glew
 	if (glewInit() != GLEW_OK)
 	{
-		showWindowsMessageError("Error: glewInit failed\n");
+		showLinuxMessageError("Error: glewInit failed\n");
 		return false;
 	}
 	return true;
@@ -322,8 +322,11 @@ void UIManager::quit_imgui()
 	ImGui::DestroyContext();
 }
 
-void UIManager::showWindowsMessageError(const std::string message)
+
+
+void UIManager::showLinuxMessageError(const std::string message)
 {
 	// This function is only used for displaying error message that would cause the program terminate
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Android Trackpad Service Error", message.c_str(), NULL);
+	if(SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Android Trackpad Service Error", message.c_str(), NULL))
+		std::cerr << "SDL_ShowSimpleMessageBox error: " << SDL_GetError() << std::endl;
 }
