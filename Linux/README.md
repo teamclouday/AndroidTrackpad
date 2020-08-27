@@ -27,11 +27,24 @@ In the ```external/imgui``` folder, create ```src``` and ```include``` and put n
 
 The final tree of ```external/imgui``` should be:  
 ```
-
+external/imgui/
+├── imgui-1.78.zip
+├── include
+│   ├── imconfig.h
+│   ├── imgui.h
+│   ├── imgui_impl_opengl3.h
+│   ├── imgui_impl_sdl.h
+│   ├── imgui_internal.h
+│   ├── imstb_rectpack.h
+│   ├── imstb_textedit.h
+│   └── imstb_truetype.h
+└── src
+    ├── imgui.cpp
+    ├── imgui_draw.cpp
+    ├── imgui_impl_opengl3.cpp
+    ├── imgui_impl_sdl.cpp
+    └── imgui_widgets.cpp
 ```
-
-Next check that ```SDL2``` and ```GLEW``` are installed on this system  
-
 Then type command (Release build):  
 ```bash
 mkdir build && cd build  
@@ -50,7 +63,7 @@ The executables are stored in ```bin``` folder
 
 ------
 
-### Important Note  
+### Important Note (Bluetooth SDP)  
 The sdp registration method is using deprecated API, so make sure bluetoothd is running in compatible mode (**Only do this if your Bluez is version 5**):  
 ```bash
 sudo vim /etc/systemd/system/dbus-org.bluez.service
