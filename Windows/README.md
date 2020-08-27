@@ -14,6 +14,72 @@ with ```include``` and ```lib``` (or ```src``` in case of ImGui) folder in each
 ImGui should also include source and header files for SDL2 and OpenGL3 implementations  
 libs for glew should be compiled static (both in x86 and x64)  
 libs for SDL2 should have both x86 and x64, and put with dll into ```lib```  
+
+The final tree of ```external``` should be:  
+```
+external
+│   ├───glew
+│   │   │   glew-2.1.0.zip
+│   │   │
+│   │   ├───include
+│   │   │   └───GL
+│   │   │           eglew.h
+│   │   │           glew.h
+│   │   │           glxew.h
+│   │   │           wglew.h
+│   │   │
+│   │   └───lib
+│   │       ├───Win32
+│   │       │       glew32s.lib
+│   │       │       
+│   │       └───x64
+│   │               glew32.exp
+│   │               glew32.lib
+│   │               glew32s.lib
+│   │
+│   ├───ImGui
+│   │   │   imgui-1.78.zip
+│   │   │
+│   │   ├───include
+│   │   │       imconfig.h
+│   │   │       imgui.h
+│   │   │       imgui_impl_opengl3.h
+│   │   │       imgui_impl_sdl.h
+│   │   │       imgui_internal.h
+│   │   │       imstb_rectpack.h
+│   │   │       imstb_textedit.h
+│   │   │       imstb_truetype.h
+│   │   │
+│   │   └───src
+│   │           imgui.cpp
+│   │           imgui_draw.cpp
+│   │           imgui_impl_opengl3.cpp
+│   │           imgui_impl_sdl.cpp
+│   │           imgui_widgets.cpp
+│   │
+│   └───SDL2
+│       │   SDL2-devel-2.0.12-VC.zip
+│       │
+│       ├───include
+│       │       begin_code.h
+│       │       close_code.h
+│       │       SDL.h
+│       │       ***** (and all headers)
+│       │
+│       └───lib
+│           ├───x64
+│           │       SDL2.dll
+│           │       SDL2.lib
+│           │       SDL2main.lib
+│           │       SDL2test.lib
+│           │
+│           └───x86
+│                   SDL2.dll
+│                   SDL2.lib
+│                   SDL2main.lib
+│                   SDL2test.lib
+```
+
 Open solution file ```*.sln``` in visual studio and build  
 
 ------
