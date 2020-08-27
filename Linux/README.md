@@ -36,10 +36,28 @@ The executables are stored in ```bin``` folder
 ------
 
 ### Important Note  
-This program requires root privilege (for Bluetooth service registration in sdp)  
-
+The sdp registration method is using deprecated API, so make sure bluetoothd is running in compatible mode:  
 ```bash
-sudo ./TrackpadService
+sudo vim /etc/systemd/system/dbus-org.bluez.service
+```
+and change:  
+```
+ExecStart=/usr/lib/bluetooth/bluetoothd
+```
+to  
+```
+ExecStart=/usr/lib/bluetooth/bluetoothd --compat
+```
+Also, in order for bluetooth service to connect sdp, edit in same file:  
+```
+ExecStartPost=/bin/chmod 777 /var/run/sdp
+```
+to give permission to all users to use sdp (no idea if this is safe)  
+
+Finally, run:  
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart bluetooth
 ```
 
 ------

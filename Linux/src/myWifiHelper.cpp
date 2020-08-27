@@ -38,10 +38,7 @@ bool WifiManager::initialize()
 	int testSocket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (INVALID_SOCKET == testSocket)
 	{
-		lock_UI.lock();
-		if (myUIManager)
-			myUIManager->pushMessage("Failed to open Wifi socket for test");
-		lock_UI.unlock();
+		UIManager::showLinuxMessageError("Failed to open Wifi socket for test");
 		return false;
 	}
 	memset(&testAddr, 0, sizeof(testAddr));
@@ -50,10 +47,7 @@ bool WifiManager::initialize()
 	testAddr.sin_port = htons(53);
 	if (SOCKET_ERROR == connect(testSocket, (struct sockaddr*)&testAddr, sizeof(testAddr)))
 	{
-		lock_UI.lock();
-		if (myUIManager)
-			myUIManager->pushMessage(std::string("Failed to connect to test dns server: ") + test_server);
-		lock_UI.unlock();
+		UIManager::showLinuxMessageError(std::string("Failed to connect to test dns server: ") + test_server);
 		close(testSocket);
 		return false;
 	}
@@ -61,10 +55,7 @@ bool WifiManager::initialize()
 	socklen_t len = sizeof(result);
 	if (SOCKET_ERROR == getsockname(testSocket, (struct sockaddr*)&result, &len))
 	{
-		lock_UI.lock();
-		if (myUIManager)
-			myUIManager->pushMessage("Failed to get Wifi test socket information");
-		lock_UI.unlock();
+		UIManager::showLinuxMessageError("Failed to get Wifi test socket information");
 		close(testSocket);
 		return false;
 	}
@@ -82,19 +73,13 @@ bool WifiManager::initialize()
 	myLocalSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (INVALID_SOCKET == myLocalSocket)
 	{
-		lock_UI.lock();
-		if (myUIManager)
-			myUIManager->pushMessage("Failed to open Wifi TCP socket");
-		lock_UI.unlock();
+		UIManager::showLinuxMessageError("Failed to open Wifi TCP socket");
 		return false;
 	}
 	// bind local socket
 	if (SOCKET_ERROR == bind(myLocalSocket, (struct sockaddr*)&hint, len))
 	{
-		lock_UI.lock();
-		if (myUIManager)
-			myUIManager->pushMessage("Failed to bind Wifi TCP socket");
-		lock_UI.unlock();
+		UIManager::showLinuxMessageError("Failed to bind Wifi TCP socket");
 		close(myLocalSocket);
 		return false;
 	}
@@ -123,6 +108,7 @@ void WifiManager::start()
 	FD_SET(myLocalSocket, &fds);
 	// set listen timeout
 	select(myLocalSocket + 1, &fds, NULL, NULL, &myLocalSocketTimeout);
+	myLocalSocketTimeout = {30, 0}; // reset timeout
 	if (FD_ISSET(myLocalSocket, &fds))
 	{
 		socklen_t addrlen = sizeof(myClientSocketAddr);

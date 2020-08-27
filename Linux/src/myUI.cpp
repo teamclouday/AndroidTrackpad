@@ -258,7 +258,7 @@ bool UIManager::initialize_sdl()
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
 		// this is the only error message that output to console
-		std::cerr << "Error: SDL_Init failed\n" << SDL_GetError() << std::endl;
+		showLinuxMessageError("Error: SDL_Init failed\n" + std::string(SDL_GetError()));
 		return false;
 	}
 	// setup GL context
