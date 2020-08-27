@@ -15,6 +15,12 @@ All are solvable by disconnecting from Android side first
 
 ------
 
+### Demo  
+This is a live demo on Linux laptop with Bluetooth connection  
+![Demo](demo.gif)  
+
+------
+
 ### Features  
 1. Connect via Wifi, or Bluetooth (Configuration done on both sides)  
 2. Four basic actions:  
